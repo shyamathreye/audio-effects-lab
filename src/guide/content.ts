@@ -6,6 +6,8 @@ export interface EffectGuide {
   watch: string
   try: string
   ableton: string
+  /** which source best reveals this effect */
+  bestWith: string
 }
 
 export const EFFECT_GUIDE: Record<string, EffectGuide> = {
@@ -14,54 +16,63 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
     watch: "The module's in-vs-out view ghosts the input behind the output: gain makes the output taller/shorter; phase-invert flips it; the spectrum shape never changes.",
     try: 'Invert the phase and watch the spectrum stay put while the waveform mirrors.',
     ableton: 'Utility',
+    bestWith: 'any source — toggle Phase Invert on a tone',
   },
   filter: {
     what: 'Passes some frequencies and attenuates others; resonance (Q) peaks the signal right at the cutoff.',
     watch: "The module's frequency-response curve IS the filter: a low-pass slopes down after the cutoff (dashed marker), a high-pass slopes up, Q makes a resonant peak. In the spectrum, energy beyond the cutoff drops.",
     try: 'Sweep a low-pass on a sawtooth and watch the harmonics vanish right-to-left.',
     ableton: 'Auto Filter',
+    bestWith: 'a Saw oscillator (rich harmonics to carve)',
   },
   eq3: {
     what: 'Boosts or cuts low, mid and high regions independently.',
     watch: "The module's frequency-response curve bends up where you boost and down where you cut — a gentle tilt, not the hard wall of a filter.",
     try: 'Cut the mids hard for a thin “telephone” sound and a visible dip in the spectrum.',
     ableton: 'EQ Three / EQ Eight',
+    bestWith: 'a Loop or Saw (full-range material)',
   },
   compressor: {
     what: 'Turns down anything above the threshold by a ratio, shrinking dynamic range; makeup gain restores level.',
     watch: "The module shows the threshold/ratio knee with a live dot that rides up the curve and flattens once it crosses the threshold; the GR readout shows how many dB it's pulling down right now.",
     try: 'Use the drum loop with a low threshold and high ratio, then sweep attack and watch the transients survive or not.',
     ableton: 'Compressor',
+    bestWith: 'the Drum loop (clear transients to squash)',
   },
   distortion: {
     what: 'Reshapes the wave so brand-new harmonics appear.',
     watch: "The module's in→out transfer curve shows the shaping: the steeper the S vs the dashed unity line, the more it flattens peaks. In the spectrum, new harmonic spikes multiply as Drive rises.",
     try: 'Feed a pure sine and raise Drive — one spike becomes a whole harmonic family.',
     ableton: 'Saturator / Overdrive',
+    bestWith: 'a pure Sine (watch one spike become many)',
   },
   delay: {
     what: 'Repeats the signal on a timer; feedback sets how many repeats you hear.',
     watch: "The module's echo diagram shows the dry hit then taps spaced at the delay time, each feedback× shorter. In the big view, the Waveform → Envelope timebase shows the echoes between drum hits; the spectrogram shows recurring stripes.",
     try: 'On the drum loop, switch to Envelope and watch the echoes fall between the hits. Then drop the time to a few ms to morph the echo into a comb filter — the bridge to Modulation.',
     ableton: 'Delay / Echo',
+    bestWith: 'the Drum loop or Pluck (transients show echoes)',
   },
   reverb: {
     what: 'Dense random reflections blur the sound into a tail.',
     watch: 'In the Waveform → Envelope timebase (or the spectrogram), energy smears and fades after each sound; damping shortens the top of the tail.',
     try: 'Use one drum hit, raise Decay, then raise Damping and watch the bright tail get shorter.',
     ableton: 'Reverb / Hybrid',
+    bestWith: 'a Pluck or Drum hit (hear the tail decay)',
   },
   modulation: {
     what: 'A slow LFO nudges a parameter: short-delay = chorus/flanger, allpass sweep = phaser, volume = tremolo, pan = auto-pan.',
     watch: "The module draws the LFO itself over a few seconds — Rate sets how many wiggles, Depth their size — labelled with what it modulates. In the spectrum/spectrogram you'll see the resulting comb/notch pattern move; tremolo pulses the amplitude.",
     try: 'Use a slow-rate Flanger and watch the notches glide across the spectrum.',
     ableton: 'Chorus / Phaser-Flanger / Auto Pan',
+    bestWith: 'White noise or a Saw (broadband shows the comb)',
   },
   bitcrusher: {
     what: 'Degrades the signal two ways: fewer bits (coarser amplitude steps) and a lower sample rate (sample-and-hold), for a lo-fi/digital crunch.',
     watch: 'In the waveform the smooth curve turns into stair-steps; in the spectrum, new aliasing partials appear (often at non-harmonic frequencies).',
     try: 'Drop Bits to 3–4 on a sine and watch it square up; then raise Downsample and watch aliasing spikes appear.',
     ableton: 'Redux',
+    bestWith: 'a Sine or Saw (clean wave to crush)',
   },
 }
 

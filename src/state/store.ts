@@ -7,6 +7,7 @@ import { DEFAULT_OSC, DEFAULT_NOISE, DEFAULT_LOOP } from '../audio/sources/types
 import type { SourceConfig, SourceKind, SourcePatch } from '../audio/sources/types'
 import { renderStages } from '../audio/offline'
 import type { FrozenData } from '../audio/offline'
+import { RECIPES } from '../guide/recipes'
 
 export interface ChainEffect {
   instanceId: string
@@ -15,7 +16,7 @@ export interface ChainEffect {
   bypassed: boolean
 }
 
-export type ViewKind = 'waveform' | 'spectrum' | 'spectrogram'
+export type ViewKind = 'waveform' | 'spectrum' | 'spectrogram' | 'response'
 export type VizLayout = 'combined' | 'individual'
 export type VizMode = 'live' | 'freeze'
 /** Waveform timebase: a short window (cycle shape) vs a long amplitude envelope. */
@@ -52,6 +53,10 @@ interface AppState {
   /** which effect def the info drawer is focused on (null = primers only) */
   infoDefId: string | null
 
+  /** active recipe id + its "what to observe" note (null when none) */
+  recipeId: string | null
+  recipeNote: { name: string; observe: string } | null
+
   play: () => Promise<void>
   stop: () => void
   /** Merge a partial patch into the current source config (same kind). */
@@ -76,6 +81,8 @@ interface AppState {
   goLive: () => void
   openInfo: (defId: string | null) => void
   closeInfo: () => void
+  loadRecipe: (recipeId: string) => Promise<void>
+  dismissRecipeNote: () => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -96,6 +103,8 @@ export const useStore = create<AppState>((set, get) => ({
   freezing: false,
   infoOpen: false,
   infoDefId: null,
+  recipeId: null,
+  recipeNote: null,
 
   async play() {
     await engine.play()
@@ -238,6 +247,32 @@ export const useStore = create<AppState>((set, get) => ({
   },
   closeInfo() {
     set({ infoOpen: false })
+  },
+  async loadRecipe(recipeId) {
+    const r = RECIPES.find((x) => x.id === recipeId)
+    if (!r) return
+    // source
+    engine.setSourceConfig(r.source)
+    set({ source: r.source, fileName: r.source.kind === 'file' ? get().fileName : null, fileError: null })
+    // clear existing chain
+    for (const e of get().chain) engine.removeEffect(e.instanceId)
+    // build the recipe chain
+    const chain: ChainEffect[] = []
+    for (const step of r.chain) {
+      const def = getEffectDef(step.defId)
+      if (!def) continue
+      const instanceId = nextId(step.defId)
+      const params = { ...defaultParams(def), ...(step.params ?? {}) }
+      await engine.addEffect(instanceId, def)
+      for (const [k, v] of Object.entries(params)) engine.setEffectParam(instanceId, k, v)
+      chain.push({ instanceId, defId: step.defId, params, bypassed: false })
+    }
+    set({ chain, recipeId, recipeNote: { name: r.name, observe: r.observe } })
+    await engine.play()
+    set({ playing: true })
+  },
+  dismissRecipeNote() {
+    set({ recipeNote: null })
   },
 }))
 

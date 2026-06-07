@@ -7,14 +7,18 @@ import { Spectrum } from '../viz/Spectrum'
 import { Spectrogram } from '../viz/Spectrogram'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
 import { drawFrozenWaveform, drawFrozenEnvelope, drawFrozenSpectrum, drawFrozenSpectrogram } from '../viz/frozenDraw'
+import { ResponseGraph } from '../viz/ResponseGraph'
+import type { RespStage } from '../viz/ResponseGraph'
 import { stageRefs } from '../viz/stages'
 import type { StageRef } from '../viz/stages'
+import { getEffectDef } from '../audio/effects'
 import type { FrozenStage } from '../audio/offline'
 
 const VIEWS: { id: ViewKind; label: string }[] = [
   { id: 'waveform', label: 'Waveform' },
   { id: 'spectrum', label: 'Spectrum' },
   { id: 'spectrogram', label: 'Spectrogram' },
+  { id: 'response', label: 'Response' },
 ]
 const LAYOUTS: { id: VizLayout; label: string }[] = [
   { id: 'combined', label: 'Combined' },
@@ -50,6 +54,27 @@ export function Visualizer() {
   const stages: (StageRef | FrozenStage)[] = live ? liveStages : frozenStages
   const getAnalyser = (id: string) => engine.getAnalyser(id)
   const getWave = (id: string) => engine.getWaveAnalyser(id)
+
+  // filter/EQ stages for the Response view (others don't have a static curve)
+  const responseStages: RespStage[] = chain
+    .map((c): RespStage | null => {
+      const d = getEffectDef(c.defId)
+      if (!d || (d.id !== 'filter' && d.id !== 'eq3')) return null
+      return {
+        id: c.instanceId,
+        colorVar: `--${d.colorToken}`,
+        label: d.name,
+        markers:
+          d.id === 'eq3'
+            ? [
+                { freq: 150, label: 'Low' },
+                { freq: c.params.midFreq as number, label: 'Mid' },
+                { freq: 4000, label: 'High' },
+              ]
+            : undefined,
+      }
+    })
+    .filter((x): x is RespStage => !!x)
 
   // ---- combined ------------------------------------------------------------
   const envelope = timebase === 'envelope'
@@ -116,19 +141,21 @@ export function Visualizer() {
           </button>
         ))}
 
-        <div className="ml-2 flex overflow-hidden rounded-control ring-1 ring-outline">
-          {LAYOUTS.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => setVizLayout(l.id)}
-              className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
-                layout === l.id ? 'bg-coral text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
+        {view !== 'response' && (
+          <div className="ml-2 flex overflow-hidden rounded-control ring-1 ring-outline">
+            {LAYOUTS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => setVizLayout(l.id)}
+                className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
+                  layout === l.id ? 'bg-coral text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Wave / Envelope timebase — only meaningful for the waveform view */}
         {view === 'waveform' && (
@@ -164,33 +191,70 @@ export function Visualizer() {
         )}
 
         {/* Live / Freeze */}
-        <div className="flex overflow-hidden rounded-control ring-1 ring-outline">
-          <button
-            onClick={goLive}
-            className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
-              live ? 'bg-mint text-chassis' : 'bg-outline/60 text-cream/60 hover:text-cream'
-            }`}
-          >
-            Live
-          </button>
-          <button
-            onClick={() => freeze()}
-            disabled={freezing}
-            title="Render the chain offline for a stable snapshot"
-            className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
-              !live ? 'bg-red text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
-            } ${freezing ? 'opacity-60' : ''}`}
-          >
-            {freezing ? '…' : 'Freeze'}
-          </button>
-        </div>
+        {view !== 'response' && (
+          <div className="flex overflow-hidden rounded-control ring-1 ring-outline">
+            <button
+              onClick={goLive}
+              className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
+                live ? 'bg-mint text-chassis' : 'bg-outline/60 text-cream/60 hover:text-cream'
+              }`}
+            >
+              Live
+            </button>
+            <button
+              onClick={() => freeze()}
+              disabled={freezing}
+              title="Render the chain offline for a stable snapshot"
+              className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
+                !live ? 'bg-red text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
+              } ${freezing ? 'opacity-60' : ''}`}
+            >
+              {freezing ? '…' : 'Freeze'}
+            </button>
+          </div>
+        )}
 
         <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-lcd/70">
-          {view === 'spectrogram' && layout === 'combined' ? 'output' : `${stages.length} ${stages.length === 1 ? 'stage' : 'stages'}`} · {live ? 'live' : 'frozen'}
+          {view === 'response'
+            ? `${responseStages.length} filter/eq · live`
+            : `${view === 'spectrogram' && layout === 'combined' ? 'output' : `${stages.length} ${stages.length === 1 ? 'stage' : 'stages'}`} · ${live ? 'live' : 'frozen'}`}
         </span>
       </div>
 
-      {layout === 'combined' ? (
+      {view === 'response' ? (
+        <>
+          <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">
+            {responseStages.length > 0 ? (
+              <ResponseGraph
+                stages={responseStages}
+                getResponse={(id, freqs) => engine.getEffectInstance(id)?.getFrequencyResponse?.(freqs) ?? null}
+                getInputAnalyser={() => engine.getAnalyser('dry')}
+                sampleRate={engine.ctx.sampleRate}
+                active={playing}
+                className="h-full w-full"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center px-8 text-center font-mono text-sm text-cream/40">
+                Add a Filter or EQ to see the chain's combined frequency response.
+              </div>
+            )}
+          </div>
+          {responseStages.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 pt-1">
+              {responseStages.map((s) => (
+                <span key={s.id} className="flex items-center gap-1.5 font-mono text-[11px]">
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: `var(${s.colorVar})` }} />
+                  <span className="text-cream/80">{s.label}</span>
+                </span>
+              ))}
+              <span className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-cream" />
+                <span className="text-cream/80">Combined</span>
+              </span>
+            </div>
+          )}
+        </>
+      ) : layout === 'combined' ? (
         <>
           <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">{renderCombined()}</div>
           {view !== 'spectrogram' && (

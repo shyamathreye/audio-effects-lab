@@ -3,6 +3,7 @@ import { Transport } from './ui/Transport'
 import { Visualizer } from './ui/Visualizer'
 import { Chain } from './ui/Chain'
 import { InfoDrawer } from './ui/InfoDrawer'
+import { RecipeBar } from './ui/RecipeBar'
 import { useStore } from './state/store'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         </div>
       </div>
 
+      <RecipeBar />
       <Visualizer />
       <Chain />
       <InfoDrawer />

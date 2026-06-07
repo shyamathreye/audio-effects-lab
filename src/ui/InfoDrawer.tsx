@@ -51,6 +51,7 @@ export function InfoDrawer() {
             <Field label="What it does" body={guide.what} />
             <Field label="What to watch" body={guide.watch} />
             <Field label="Try this" body={guide.try} />
+            <Field label="Best heard with" body={guide.bestWith} />
           </section>
         )}
 

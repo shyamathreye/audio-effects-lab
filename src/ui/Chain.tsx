@@ -78,7 +78,7 @@ export function Chain() {
 
           {chain.length === 0 && (
             <div className="relative z-10 flex items-center justify-center px-8 py-10 text-center font-mono text-sm text-cream/40">
-              Empty chain — the dry signal passes straight through. Add an effect above to start shaping it.
+              Empty chain — the dry signal passes straight through. Add an effect above, or pick a “Try a sound” recipe to load a ready-made chain.
             </div>
           )}
         </div>

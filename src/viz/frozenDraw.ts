@@ -1,7 +1,9 @@
 import type { FrozenStage } from '../audio/offline'
 import { magnitudeDb, stft } from '../audio/dsp/fft'
-import { cssVar, freqToX, dbToY, FREQ_MIN, FREQ_MAX } from './analysis'
+import { cssVar, freqToX, dbToY, strokeWave, waveStart, FREQ_MIN, FREQ_MAX } from './analysis'
 import { heatRGB } from './heat'
+
+const clampY = (y: number, h: number) => Math.max(0, Math.min(h, y))
 
 // Static draws for Freeze mode (no rAF) — computed from offline-rendered buffers.
 
@@ -16,6 +18,7 @@ export function drawFrozenWaveform(
   h: number,
   stages: FrozenStage[],
   sr: number,
+  spanSec = 0.03,
 ): void {
   clearLcd(ctx, w, h)
   ctx.strokeStyle = cssVar('--lcd-grid')
@@ -27,31 +30,14 @@ export function drawFrozenWaveform(
 
   if (stages.length === 0) return
   const ref = stages[0].data
-  const span = Math.min(Math.floor(sr * 0.018), Math.floor(ref.length / 2))
-  const mid = Math.floor(ref.length / 2)
-  // align on a rising zero-crossing near the middle of the reference buffer
-  let start = mid
-  for (let i = mid; i < mid + Math.min(span, ref.length - mid - 1); i++) {
-    if (ref[i - 1] <= 0 && ref[i] > 0) {
-      start = i
-      break
-    }
-  }
+  const count = Math.max(64, Math.min(ref.length, Math.round(spanSec * sr)))
+  const start = waveStart(ref, count) // near the front → shows onset & echoes
 
   for (const stage of stages) {
-    const d = stage.data
     ctx.lineWidth = stage.id === 'dry' ? Math.max(1, w / 900) : Math.max(1.5, w / 650)
     ctx.strokeStyle = cssVar(stage.colorVar)
     ctx.globalAlpha = stage.bypassed ? 0.25 : stage.id === 'dry' ? 0.55 : 0.9
-    ctx.beginPath()
-    for (let i = 0; i < span; i++) {
-      const v = d[start + i] ?? 0
-      const x = (i / span) * w
-      const y = (0.5 - v * 0.45) * h
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-    ctx.stroke()
+    strokeWave(ctx, stage.data, start, count, w, h)
   }
   ctx.globalAlpha = 1
 }
@@ -103,7 +89,7 @@ export function drawFrozenEnvelope(
         const a = Math.abs(d[i])
         if (a > peak) peak = a
       }
-      const y = mid - peak * mid * 0.92
+      const y = clampY(mid - peak * mid * 0.92, h)
       if (x === 0) ctx.moveTo(x, y)
       else ctx.lineTo(x, y)
     }
@@ -114,7 +100,7 @@ export function drawFrozenEnvelope(
         const a = Math.abs(d[i])
         if (a > peak) peak = a
       }
-      ctx.lineTo(x, mid + peak * mid * 0.92)
+      ctx.lineTo(x, clampY(mid + peak * mid * 0.92, h))
     }
     ctx.closePath()
     ctx.fill()

@@ -30,6 +30,8 @@ export function Visualizer() {
   const setVizLayout = useStore((s) => s.setVizLayout)
   const timebase = useStore((s) => s.timebase)
   const setTimebase = useStore((s) => s.setTimebase)
+  const waveSpan = useStore((s) => s.waveSpan)
+  const zoomWave = useStore((s) => s.zoomWave)
   const mode = useStore((s) => s.vizMode)
   const frozen = useStore((s) => s.frozen)
   const freezeId = useStore((s) => s.freezeId)
@@ -47,6 +49,7 @@ export function Visualizer() {
   const sr = live ? engine.ctx.sampleRate : (frozen?.sr ?? engine.ctx.sampleRate)
   const stages: (StageRef | FrozenStage)[] = live ? liveStages : frozenStages
   const getAnalyser = (id: string) => engine.getAnalyser(id)
+  const getWave = (id: string) => engine.getWaveAnalyser(id)
 
   // ---- combined ------------------------------------------------------------
   const envelope = timebase === 'envelope'
@@ -56,7 +59,7 @@ export function Visualizer() {
         return envelope ? (
           <EnvelopeWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
         ) : (
-          <OverlayWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+          <OverlayWaveform stages={liveStages} getAnalyser={getWave} spanSec={waveSpan} active={playing} className="h-full w-full" />
         )
       if (view === 'spectrum') return <Spectrum stages={liveStages} getAnalyser={getAnalyser} sampleRate={sr} active={playing} className="h-full w-full" />
       return <Spectrogram getAnalyser={() => engine.getAnalyser('master')} sampleRate={sr} active={playing} className="h-full w-full" />
@@ -64,8 +67,8 @@ export function Visualizer() {
     if (view === 'waveform')
       return (
         <FrozenCanvas
-          redrawKey={`${freezeId}:${timebase}`}
-          draw={(c, w, h) => (envelope ? drawFrozenEnvelope(c, w, h, frozenStages, sr) : drawFrozenWaveform(c, w, h, frozenStages, sr))}
+          redrawKey={`${freezeId}:${timebase}:${waveSpan}`}
+          draw={(c, w, h) => (envelope ? drawFrozenEnvelope(c, w, h, frozenStages, sr) : drawFrozenWaveform(c, w, h, frozenStages, sr, waveSpan))}
           className="h-full w-full"
         />
       )
@@ -81,7 +84,7 @@ export function Visualizer() {
         return envelope ? (
           <EnvelopeWaveform stages={[s as StageRef]} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
         ) : (
-          <Waveform getAnalyser={() => getAnalyser(s.id)} colorVar={s.colorVar} active={playing} className="h-full w-full" />
+          <Waveform getAnalyser={() => getWave(s.id)} colorVar={s.colorVar} spanSec={waveSpan} active={playing} className="h-full w-full" />
         )
       if (view === 'spectrum') return <Spectrum stages={[s as StageRef]} getAnalyser={getAnalyser} sampleRate={sr} fill active={playing} className="h-full w-full" />
       return <Spectrogram getAnalyser={() => getAnalyser(s.id)} sampleRate={sr} active={playing} className="h-full w-full" />
@@ -142,6 +145,21 @@ export function Visualizer() {
                 {t.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Zoom (Wave timebase only) */}
+        {view === 'waveform' && timebase === 'wave' && (
+          <div className="flex items-center overflow-hidden rounded-control ring-1 ring-outline">
+            <button onClick={() => zoomWave(-1)} title="Zoom in (shorter window)" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
+              −
+            </button>
+            <span className="px-1 font-mono text-[10px] tabular-nums text-lcd/80">
+              {waveSpan < 0.1 ? `${Math.round(waveSpan * 1000)}ms` : `${waveSpan.toFixed(2)}s`}
+            </span>
+            <button onClick={() => zoomWave(1)} title="Zoom out (longer window)" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
+              +
+            </button>
           </div>
         )}
 

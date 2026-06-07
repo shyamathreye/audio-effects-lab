@@ -4,7 +4,10 @@ import type { EffectInstance } from './effects/types'
 // for that stage's color (PRD §4.3). Taps persist across reorders.
 export interface Tap {
   node: GainNode
+  /** Spectrum / spectrogram analyser (moderate fftSize → good time resolution). */
   analyser: AnalyserNode
+  /** Time-domain analyser with a long buffer so the waveform can zoom out far. */
+  waveAnalyser: AnalyserNode
 }
 
 export function createTap(ctx: BaseAudioContext, fftSize = 2048): Tap {
@@ -13,7 +16,12 @@ export function createTap(ctx: BaseAudioContext, fftSize = 2048): Tap {
   const analyser = ctx.createAnalyser()
   analyser.fftSize = fftSize
   analyser.smoothingTimeConstant = 0.6
-  return { node, analyser }
+  // Separate analyser for the oscilloscope: 32768 samples ≈ 0.74 s at 44.1 kHz,
+  // enough to see a 180 ms delay's echoes live. Kept distinct so the spectrogram
+  // keeps its short-FFT time resolution.
+  const waveAnalyser = ctx.createAnalyser()
+  waveAnalyser.fftSize = 32768
+  return { node, analyser, waveAnalyser }
 }
 
 // A runtime effect couples an EffectInstance with its output tap. The tap moves
@@ -58,6 +66,7 @@ export function rewireChain(ep: ChainEndpoints): void {
   // Rebuild: source → dryTap → [fx | bypass] → … → outputGain.
   if (sourceOut) sourceOut.connect(dryTap.node)
   dryTap.node.connect(dryTap.analyser)
+  dryTap.node.connect(dryTap.waveAnalyser)
 
   let cursor: AudioNode = dryTap.node
   for (const fx of effects) {
@@ -68,6 +77,7 @@ export function rewireChain(ep: ChainEndpoints): void {
       fx.instance.output.connect(fx.tap.node)
     }
     fx.tap.node.connect(fx.tap.analyser)
+    fx.tap.node.connect(fx.tap.waveAnalyser)
     cursor = fx.tap.node
   }
   cursor.connect(outputGain)

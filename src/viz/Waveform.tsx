@@ -1,32 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useRafLoop } from './useRafLoop'
-import { readTimeDomain, zeroCrossingOffset, cssVar } from './analysis'
+import { readTimeDomain, cssVar, strokeWave, waveStart } from './analysis'
 
 interface WaveformProps {
-  /** Function returning the analyser to read (re-evaluated each frame so it
-      survives chain rebuilds). */
+  /** Returns the time-domain analyser to read (re-evaluated each frame). */
   getAnalyser: () => AnalyserNode | null
   /** CSS variable name for the trace color, e.g. '--stage-filter'. */
   colorVar: string
+  /** Time window to display, in seconds. */
+  spanSec?: number
   active?: boolean
-  /** Draw faint center line + grid. */
   grid?: boolean
   className?: string
 }
 
-// Live oscilloscope. Reads time-domain data each frame, aligns on a rising
-// zero-crossing so a steady tone holds still (PRD R2), and strokes the trace in
-// the stage's hue.
-export function Waveform({
-  getAnalyser,
-  colorVar,
-  active = true,
-  grid = true,
-  className,
-}: WaveformProps) {
+// Live oscilloscope. Shows `spanSec` of the signal, aligned on a rising
+// zero-crossing so a steady tone holds still; the trace is clamped to the
+// viewport and decimated (min/max) so it stays in-bounds and legible at any zoom.
+export function Waveform({ getAnalyser, colorVar, spanSec = 0.03, active = true, grid = true, className }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(2048))
   const drawRef = useRef<() => void>(() => {})
+  const spanRef = useRef(spanSec)
+  spanRef.current = spanSec
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current
@@ -39,7 +35,7 @@ export function Waveform({
 
   useEffect(() => {
     resize()
-    drawRef.current() // paint one static frame (grid + current/flat signal)
+    drawRef.current()
     const ro = new ResizeObserver(() => {
       resize()
       drawRef.current()
@@ -53,15 +49,11 @@ export function Waveform({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
     const w = canvas.width
     const h = canvas.height
-    ctx.clearRect(0, 0, w, h)
 
-    // background well
     ctx.fillStyle = cssVar('--lcd-bg')
     ctx.fillRect(0, 0, w, h)
-
     if (grid) {
       ctx.strokeStyle = cssVar('--lcd-grid')
       ctx.lineWidth = 1
@@ -73,7 +65,6 @@ export function Waveform({
 
     const analyser = getAnalyser()
     if (!analyser) return
-
     let buf = bufRef.current
     if (buf.length !== analyser.fftSize) {
       buf = new Float32Array(analyser.fftSize)
@@ -81,22 +72,12 @@ export function Waveform({
     }
     readTimeDomain(analyser, buf)
 
-    // Show ~2 cycles worth of samples, aligned on a zero crossing.
-    const span = Math.floor(buf.length * 0.5)
-    const start = zeroCrossingOffset(buf, buf.length - span)
-
+    const count = Math.max(64, Math.min(buf.length, Math.round(spanRef.current * analyser.context.sampleRate)))
+    const start = waveStart(buf, count)
     ctx.lineWidth = Math.max(1.5, w / 600)
     ctx.strokeStyle = cssVar(colorVar)
     ctx.lineJoin = 'round'
-    ctx.beginPath()
-    for (let i = 0; i < span; i++) {
-      const v = buf[start + i]
-      const x = (i / span) * w
-      const y = (0.5 - v * 0.45) * h
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-    ctx.stroke()
+    strokeWave(ctx, buf, start, count, w, h)
   }, [getAnalyser, colorVar, grid])
 
   drawRef.current = draw

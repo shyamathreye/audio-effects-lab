@@ -24,6 +24,61 @@ export function zeroCrossingOffset(buf: Float32Array, searchLen: number): number
   return 0
 }
 
+const clampY = (y: number, h: number) => Math.max(0, Math.min(h, y))
+
+// Stroke `count` samples of `buf` starting at `start` across the full width,
+// always staying inside the viewport (peaks beyond ±1 clamp to the rail rather
+// than drawing off-canvas). When zoomed out (more samples than pixels) it draws
+// a min/max band per column so nothing aliases away; when zoomed in it draws a
+// smooth interpolated line. `ctx` styling (stroke/alpha/width) is set by caller.
+export function strokeWave(
+  ctx: CanvasRenderingContext2D,
+  buf: Float32Array,
+  start: number,
+  count: number,
+  w: number,
+  h: number,
+  amp = 0.45,
+): void {
+  const n = Math.min(count, buf.length - start)
+  if (n <= 1) return
+  const mid = h / 2
+  ctx.beginPath()
+  if (n <= w) {
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * w
+      const y = clampY(mid - buf[start + i] * amp * h, h)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+  } else {
+    const per = n / w
+    for (let cx = 0; cx < w; cx++) {
+      let mn = Infinity
+      let mx = -Infinity
+      const a = start + Math.floor(cx * per)
+      const b = start + Math.floor((cx + 1) * per)
+      for (let i = a; i < b && i < buf.length; i++) {
+        const v = buf[i]
+        if (v < mn) mn = v
+        if (v > mx) mx = v
+      }
+      if (mn === Infinity) continue
+      ctx.moveTo(cx, clampY(mid - mx * amp * h, h))
+      ctx.lineTo(cx, clampY(mid - mn * amp * h, h))
+    }
+  }
+  ctx.stroke()
+}
+
+// Pick a stable start offset that shows `count` samples: align to a rising
+// zero-crossing near the front so a steady tone holds still.
+export function waveStart(buf: Float32Array, count: number): number {
+  const maxStart = Math.max(0, buf.length - count)
+  if (maxStart === 0) return 0
+  return Math.min(zeroCrossingOffset(buf, Math.min(maxStart, 1024)), maxStart)
+}
+
 /** Resolve a CSS variable to its concrete color string (for canvas strokes). */
 export function cssVar(name: string): string {
   if (typeof window === 'undefined') return '#fff'

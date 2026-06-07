@@ -40,6 +40,8 @@ interface AppState {
   view: ViewKind
   vizLayout: VizLayout
   timebase: Timebase
+  /** Waveform (Wave mode) time window in seconds. */
+  waveSpan: number
   vizMode: VizMode
   frozen: FrozenData | null
   /** bumped each freeze so frozen canvases redraw */
@@ -68,6 +70,8 @@ interface AppState {
   setView: (view: ViewKind) => void
   setVizLayout: (layout: VizLayout) => void
   setTimebase: (t: Timebase) => void
+  /** dir > 0 zooms out (longer window), dir < 0 zooms in. */
+  zoomWave: (dir: number) => void
   freeze: () => Promise<void>
   goLive: () => void
   openInfo: (defId: string | null) => void
@@ -85,6 +89,7 @@ export const useStore = create<AppState>((set, get) => ({
   view: 'waveform',
   vizLayout: 'combined',
   timebase: 'wave',
+  waveSpan: 0.03,
   vizMode: 'live',
   frozen: null,
   freezeId: 0,
@@ -207,6 +212,13 @@ export const useStore = create<AppState>((set, get) => ({
   },
   setTimebase(t) {
     set({ timebase: t })
+  },
+  zoomWave(dir) {
+    set((s) => {
+      const factor = dir > 0 ? 1.6 : 1 / 1.6
+      const span = Math.min(1.5, Math.max(0.002, s.waveSpan * factor))
+      return { waveSpan: span }
+    })
   },
   async freeze() {
     const { source, chain } = get()

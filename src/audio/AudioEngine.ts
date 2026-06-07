@@ -199,4 +199,11 @@ export class AudioEngine {
     if (stage === 'master') return this.masterAnalyser
     return this.effects.find((e) => e.id === stage)?.tap.analyser ?? null
   }
+
+  /** Long-buffer time-domain analyser for the oscilloscope (zoomable). */
+  getWaveAnalyser(stage: StageId): AnalyserNode | null {
+    if (stage === 'dry') return this.dryTap.waveAnalyser
+    if (stage === 'master') return this.masterAnalyser
+    return this.effects.find((e) => e.id === stage)?.tap.waveAnalyser ?? null
+  }
 }

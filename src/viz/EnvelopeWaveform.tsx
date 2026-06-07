@@ -106,14 +106,14 @@ export function EnvelopeWaveform({ stages, getAnalyser, active = true, className
       for (let i = 0; i < HISTORY; i++) {
         const p = ring[(head + i) % HISTORY]
         const x = (i / (HISTORY - 1)) * w
-        const y = mid - p * mid * 0.92
+        const y = Math.max(0, mid - p * mid * 0.92)
         if (i === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
       }
       for (let i = HISTORY - 1; i >= 0; i--) {
         const p = ring[(head + i) % HISTORY]
         const x = (i / (HISTORY - 1)) * w
-        const y = mid + p * mid * 0.92
+        const y = Math.min(h, mid + p * mid * 0.92)
         ctx.lineTo(x, y)
       }
       ctx.closePath()

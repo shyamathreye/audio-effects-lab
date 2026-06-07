@@ -1,30 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useRafLoop } from './useRafLoop'
-import { readTimeDomain, zeroCrossingOffset, cssVar } from './analysis'
+import { readTimeDomain, cssVar, strokeWave, waveStart } from './analysis'
 import type { StageRef } from './stages'
 
 interface OverlayWaveformProps {
   stages: StageRef[]
   getAnalyser: (id: string) => AnalyserNode | null
+  spanSec?: number
   active?: boolean
   className?: string
 }
 
 // Combined view: every stage's waveform overlaid on one screen, each in its hue.
-// All traces share a single time offset (taken from the dry signal's rising
-// zero-crossing) so phase/shape differences between stages line up for compare.
-export function OverlayWaveform({
-  stages,
-  getAnalyser,
-  active = true,
-  className,
-}: OverlayWaveformProps) {
+// All traces share one time offset (from the dry signal's zero-crossing) so
+// shape/phase differences line up; clamped + decimated so they stay in-bounds.
+export function OverlayWaveform({ stages, getAnalyser, spanSec = 0.03, active = true, className }: OverlayWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(2048))
   const refRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(2048))
   const drawRef = useRef<() => void>(() => {})
   const stagesRef = useRef(stages)
   stagesRef.current = stages
+  const spanRef = useRef(spanSec)
+  spanRef.current = spanSec
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current
@@ -66,10 +64,10 @@ export function OverlayWaveform({
     const list = stagesRef.current
     if (list.length === 0) return
 
-    // Reference offset from the first (dry) stage so all traces align.
+    // shared offset + count from the dry (first) stage
     const refAnalyser = getAnalyser(list[0].id)
+    let count = 1024
     let offset = 0
-    let span = 1024
     if (refAnalyser) {
       let ref = refRef.current
       if (ref.length !== refAnalyser.fftSize) {
@@ -77,8 +75,8 @@ export function OverlayWaveform({
         refRef.current = ref
       }
       readTimeDomain(refAnalyser, ref)
-      span = Math.floor(ref.length * 0.5)
-      offset = zeroCrossingOffset(ref, ref.length - span)
+      count = Math.max(64, Math.min(ref.length, Math.round(spanRef.current * refAnalyser.context.sampleRate)))
+      offset = waveStart(ref, count)
     }
 
     for (const stage of list) {
@@ -90,19 +88,10 @@ export function OverlayWaveform({
         bufRef.current = buf
       }
       readTimeDomain(analyser, buf)
-
       ctx.lineWidth = stage.id === 'dry' ? Math.max(1, w / 900) : Math.max(1.5, w / 650)
       ctx.strokeStyle = cssVar(stage.colorVar)
       ctx.globalAlpha = stage.bypassed ? 0.25 : stage.id === 'dry' ? 0.5 : 0.9
-      ctx.beginPath()
-      for (let i = 0; i < span; i++) {
-        const v = buf[offset + i] ?? 0
-        const x = (i / span) * w
-        const y = (0.5 - v * 0.45) * h
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.stroke()
+      strokeWave(ctx, buf, offset, count, w, h)
     }
     ctx.globalAlpha = 1
   }, [getAnalyser])

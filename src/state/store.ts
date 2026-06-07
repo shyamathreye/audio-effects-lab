@@ -53,9 +53,9 @@ interface AppState {
   /** which effect def the info drawer is focused on (null = primers only) */
   infoDefId: string | null
 
-  /** active recipe id + its "what to observe" note (null when none) */
+  /** active recipe id + its learning notes (null when none) */
   recipeId: string | null
-  recipeNote: { name: string; observe: string } | null
+  recipeNote: { name: string; listen: string; watch: string; tweak: string } | null
 
   play: () => Promise<void>
   stop: () => void
@@ -251,6 +251,9 @@ export const useStore = create<AppState>((set, get) => ({
   async loadRecipe(recipeId) {
     const r = RECIPES.find((x) => x.id === recipeId)
     if (!r) return
+    // reset master to a clean, safe level so every recipe plays as intended
+    engine.setMasterGainDb(0)
+    set({ masterDb: 0 })
     // source
     engine.setSourceConfig(r.source)
     set({ source: r.source, fileName: r.source.kind === 'file' ? get().fileName : null, fileError: null })
@@ -267,7 +270,12 @@ export const useStore = create<AppState>((set, get) => ({
       for (const [k, v] of Object.entries(params)) engine.setEffectParam(instanceId, k, v)
       chain.push({ instanceId, defId: step.defId, params, bypassed: false })
     }
-    set({ chain, recipeId, recipeNote: { name: r.name, observe: r.observe } })
+    set({
+      chain,
+      recipeId,
+      view: r.view,
+      recipeNote: { name: r.name, listen: r.listen, watch: r.watch, tweak: r.tweak },
+    })
     await engine.play()
     set({ playing: true })
   },

@@ -63,6 +63,8 @@ export type StageColorToken =
   | 'stage-reverb'
   | 'stage-modulation'
   | 'stage-bitcrusher'
+  | 'stage-ringmod'
+  | 'stage-autowah'
 
 /** Resolve a ParamSpec's default into its initial value map. */
 export function defaultParams(def: EffectDef): Record<string, ParamValue> {

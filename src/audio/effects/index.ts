@@ -8,15 +8,19 @@ import { delay } from './delay'
 import { reverb } from './reverb'
 import { modulation } from './modulation'
 import { bitcrusher } from './bitcrusher'
+import { ringmod } from './ringmod'
+import { autowah } from './autowah'
 
 // Effect registry — the full v1 set (PRD §1.2 / §4.4), ordered as in the PRD,
-// plus the Bitcrusher stretch (§1.3, first AudioWorklet).
+// plus the Bitcrusher stretch (§1.3) and extras (ring mod, auto-wah).
 export const EFFECTS: EffectDef[] = [
   utility,
   filter,
   eq3,
+  autowah,
   compressor,
   distortion,
+  ringmod,
   delay,
   reverb,
   modulation,

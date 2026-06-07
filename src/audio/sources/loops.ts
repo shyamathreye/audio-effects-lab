@@ -84,20 +84,36 @@ function padLoop(sr: number): Float32Array<ArrayBuffer> {
 function melodicLoop(sr: number): Float32Array<ArrayBuffer> {
   const len = Math.floor(2 * sr)
   const d = new Float32Array(len)
-  // A minor pentatonic phrase
-  const seq = [220, 261.63, 293.66, 329.63, 392, 329.63, 293.66, 261.63]
-  const noteDur = 2 / seq.length
+  // A flowing A-minor line; notes overlap (legato) and ring into a soft tail.
+  const seq = [220, 261.63, 329.63, 440, 392, 329.63, 293.66, 261.63] // A3 C4 E4 A4 G4 E4 D4 C4
+  const step = 2 / seq.length // 0.25 s between note starts
+  const ring = step * 1.6 // each note rings a bit past the next
   for (let n = 0; n < seq.length; n++) {
     const f = seq[n]
-    const start = Math.floor(n * noteDur * sr)
-    const dur = Math.floor(noteDur * sr)
+    const start = Math.floor(n * step * sr)
+    const dur = Math.floor(ring * sr)
     for (let i = 0; i < dur && start + i < len; i++) {
       const t = i / sr
-      const env = Math.min(1, t / 0.01) * Math.exp(-4 * t) // pluck
-      // triangle-ish via two harmonics
-      const s = Math.sin(2 * Math.PI * f * t) + 0.25 * Math.sin(2 * Math.PI * 2 * f * t)
+      const env = Math.min(1, t / 0.006) * Math.exp(-3.2 * t) // pluck → decay
+      // warm tone: fundamental + softer 2nd/3rd harmonics
+      const s =
+        Math.sin(2 * Math.PI * f * t) +
+        0.4 * Math.sin(2 * Math.PI * 2 * f * t) +
+        0.18 * Math.sin(2 * Math.PI * 3 * f * t)
       d[start + i] += s * env * 0.5
     }
+  }
+  return d
+}
+
+// Normalize a loop to a consistent, safe peak so every source sits at a similar
+// level under the master (no surprises / clipping).
+function normalize(d: Float32Array<ArrayBuffer>, target = 0.8): Float32Array<ArrayBuffer> {
+  let peak = 0
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]))
+  if (peak > 1e-6) {
+    const g = target / peak
+    for (let i = 0; i < d.length; i++) d[i] *= g
   }
   return d
 }
@@ -106,7 +122,7 @@ function getLoopData(name: LoopName, sr: number): Float32Array<ArrayBuffer> {
   const key = `${name}@${sr}`
   let data = cache.get(key)
   if (!data) {
-    data = name === 'drum' ? drumLoop(sr) : name === 'pad' ? padLoop(sr) : melodicLoop(sr)
+    data = normalize(name === 'drum' ? drumLoop(sr) : name === 'pad' ? padLoop(sr) : melodicLoop(sr))
     cache.set(key, data)
   }
   return data

@@ -7,6 +7,7 @@ import {
   harmonicRatio,
   crestFactor,
   autocorrAtLag,
+  goertzel,
   rms,
 } from './signal'
 
@@ -133,6 +134,28 @@ export async function runEffectFixtures(): Promise<FixtureResult[]> {
     const wHi = bandEnergy(wet.data, wet.sr, 1500, 18000)
     const ratio = wHi / Math.max(1e-12, dHi)
     out.push({ id: 'bitcrusher', name: 'Bitcrusher', pass: ratio > 20, detail: `>1.5kHz energy ×${num(ratio, 1)} of clean sine` })
+  }
+
+  // 10 · Ring Mod — sine×carrier creates sum & difference sidebands not present
+  // in the dry tone (220 ± 320 = 100 & 540 Hz).
+  {
+    const o: RenderOpts = { source: 'sine', freq: 220, dur: 0.4 }
+    const dry = await renderDry(o)
+    const wet = await renderThrough(def('ringmod'), { freq: 320, wet: 1 }, o)
+    const sideDry = goertzel(dry.data, 540, dry.sr) + goertzel(dry.data, 100, dry.sr)
+    const sideWet = goertzel(wet.data, 540, wet.sr) + goertzel(wet.data, 100, wet.sr)
+    out.push({ id: 'ringmod', name: 'Ring Mod', pass: sideWet > 0.01 && sideWet > sideDry * 10, detail: `sidebands(100/540Hz) ${num(sideDry, 4)}→${num(sideWet, 3)}` })
+  }
+
+  // 11 · Auto-Wah — resonant band-pass: keeps a mid band, strips the highs of a saw.
+  {
+    const o: RenderOpts = { source: 'saw', freq: 110, dur: 0.5 }
+    const dry = await renderDry(o)
+    const wet = await renderThrough(def('autowah'), defaultParams(def('autowah')), o)
+    const dHi = bandEnergy(dry.data, dry.sr, 6000, 16000)
+    const wHi = bandEnergy(wet.data, wet.sr, 6000, 16000)
+    const ratio = wHi / Math.max(1e-12, dHi)
+    out.push({ id: 'autowah', name: 'Auto-Wah', pass: ratio < 0.6, detail: `>6kHz energy ×${num(ratio, 3)} of dry (band-passed)` })
   }
 
   return out

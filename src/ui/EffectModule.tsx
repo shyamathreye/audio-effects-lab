@@ -4,9 +4,11 @@ import { useStore } from '../state/store'
 import type { ChainEffect } from '../state/store'
 import { getEffectDef } from '../audio/effects'
 import type { ParamSpec } from '../audio/effects/types'
+import { PARAM_HELP } from '../guide/content'
 import { ParamControl } from './ParamControl'
 import { Waveform } from '../viz/Waveform'
 import { OverlayWaveform } from '../viz/OverlayWaveform'
+import { Spectrum } from '../viz/Spectrum'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
 import { drawTransferCurve } from '../viz/responseDraw'
 import { ResponseSpectrumView } from '../viz/ResponseSpectrumView'
@@ -39,7 +41,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const bodyTone = index % 2 === 0 ? 'bg-coral' : 'bg-coral-alt'
 
   // Each effect gets the inline view that best shows what it does.
-  const viewKind: 'response' | 'inout' | 'comp' | 'transfer' | 'echoes' | 'decay' | 'lfo' | 'wave' =
+  const viewKind: 'response' | 'inout' | 'comp' | 'transfer' | 'echoes' | 'decay' | 'lfo' | 'spectrum' | 'wave' =
     def.id === 'filter' || def.id === 'eq3'
       ? 'response'
       : def.id === 'utility'
@@ -54,7 +56,9 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
                 ? 'decay'
                 : def.id === 'modulation'
                   ? 'lfo'
-                  : 'wave'
+                  : def.id === 'ringmod' || def.id === 'autowah'
+                    ? 'spectrum'
+                    : 'wave'
   const sr = engine.ctx.sampleRate
   const paramsKey = JSON.stringify(effect.params)
   const caption = {
@@ -65,6 +69,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
     echoes: 'echoes',
     decay: 'decay tail',
     lfo: 'LFO',
+    spectrum: 'output spectrum',
     wave: 'waveform',
   }[viewKind]
 
@@ -154,6 +159,17 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         className="h-full w-full"
       />
     )
+  } else if (viewKind === 'spectrum') {
+    inlineView = (
+      <Spectrum
+        stages={[{ id: effect.instanceId, colorVar, label: def.name, bypassed: effect.bypassed }]}
+        getAnalyser={(id) => engine.getAnalyser(id)}
+        sampleRate={sr}
+        fill
+        active={playing}
+        className="h-full w-full"
+      />
+    )
   } else {
     inlineView = <Waveform getAnalyser={() => engine.getAnalyser(effect.instanceId)} colorVar={colorVar} active={playing} className="h-full w-full" />
   }
@@ -230,6 +246,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
             spec={p}
             value={effect.params[p.id]}
             color={hue}
+            help={PARAM_HELP[`${def.id}.${p.id}`]}
             onChange={(v) => setParam(effect.instanceId, p.id, v)}
           />
         ))}

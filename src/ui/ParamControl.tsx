@@ -5,15 +5,19 @@ interface ParamControlProps {
   spec: ParamSpec
   value: ParamValue
   color?: string
+  /** Hover help explaining what the control does. */
+  help?: string
   onChange: (value: ParamValue) => void
 }
 
 // Renders the right control for a ParamSpec: knob (float), select (enum),
 // toggle (bool). Driven entirely by the spec so every effect gets a UI for free.
-export function ParamControl({ spec, value, color, onChange }: ParamControlProps) {
+export function ParamControl({ spec, value, color, help, onChange }: ParamControlProps) {
+  const tip = help ? `${spec.label} — ${help}` : spec.label
+
   if (spec.type === 'enum') {
     return (
-      <label className="flex flex-col items-center gap-1">
+      <label className="flex flex-col items-center gap-1" title={tip}>
         <select
           value={String(value)}
           onChange={(e) => onChange(e.target.value)}
@@ -37,6 +41,7 @@ export function ParamControl({ spec, value, color, onChange }: ParamControlProps
         type="button"
         onClick={() => onChange(!on)}
         aria-pressed={on}
+        title={tip}
         className="flex flex-col items-center gap-1"
       >
         <span
@@ -63,6 +68,7 @@ export function ParamControl({ spec, value, color, onChange }: ParamControlProps
       unit={spec.unit}
       scale={spec.scale}
       color={color}
+      help={help}
       onChange={onChange}
     />
   )

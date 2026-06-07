@@ -6,9 +6,13 @@ import { getEffectDef } from '../audio/effects'
 import type { ParamSpec } from '../audio/effects/types'
 import { ParamControl } from './ParamControl'
 import { Waveform } from '../viz/Waveform'
+import { OverlayWaveform } from '../viz/OverlayWaveform'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
 import { drawTransferCurve } from '../viz/responseDraw'
 import { ResponseSpectrumView } from '../viz/ResponseSpectrumView'
+import { CompressorView } from '../viz/CompressorView'
+import { drawDelayEchoes, drawReverbDecay, drawLFO } from '../viz/effectViews'
+import type { ModMode } from '../audio/effects/modulation'
 
 function visible(spec: ParamSpec, params: ChainEffect['params']): boolean {
   if (!spec.showWhen) return true
@@ -34,36 +38,80 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const colorVar = `--${def.colorToken}`
   const bodyTone = index % 2 === 0 ? 'bg-coral' : 'bg-coral-alt'
 
-  // Pick the most legible inline view for this effect:
-  //   filter/eq → frequency-response curve · distortion/compressor → transfer
-  //   curve · everything else → live waveform.
-  const viewKind =
+  // Each effect gets the inline view that best shows what it does.
+  const viewKind: 'response' | 'inout' | 'comp' | 'transfer' | 'echoes' | 'decay' | 'lfo' | 'wave' =
     def.id === 'filter' || def.id === 'eq3'
       ? 'response'
-      : def.id === 'distortion' || def.id === 'compressor'
-        ? 'transfer'
-        : 'wave'
+      : def.id === 'utility'
+        ? 'inout'
+        : def.id === 'compressor'
+          ? 'comp'
+          : def.id === 'distortion'
+            ? 'transfer'
+            : def.id === 'delay'
+              ? 'echoes'
+              : def.id === 'reverb'
+                ? 'decay'
+                : def.id === 'modulation'
+                  ? 'lfo'
+                  : 'wave'
   const sr = engine.ctx.sampleRate
   const paramsKey = JSON.stringify(effect.params)
-  const caption =
-    viewKind === 'response' ? 'spectrum + response' : viewKind === 'transfer' ? 'in → out' : 'waveform'
+  const caption = {
+    response: 'spectrum + response',
+    inout: 'in vs out',
+    comp: 'compression',
+    transfer: 'in → out',
+    echoes: 'echoes',
+    decay: 'decay tail',
+    lfo: 'LFO',
+    wave: 'waveform',
+  }[viewKind]
 
   // the signal arriving at this effect = output of the upstream stage
   const upstreamId = index === 0 ? 'dry' : (chain[index - 1]?.instanceId ?? 'dry')
+  const p = effect.params
 
-  const inlineView =
-    viewKind === 'response' ? (
+  let inlineView: React.ReactNode
+  if (viewKind === 'response') {
+    inlineView = (
       <ResponseSpectrumView
         response={(freqs) => engine.getEffectInstance(effect.instanceId)?.getFrequencyResponse?.(freqs) ?? null}
         getInputAnalyser={() => engine.getAnalyser(upstreamId)}
         sampleRate={sr}
         colorVar={colorVar}
-        cutoffHz={def.id === 'filter' ? (effect.params.cutoff as number) : undefined}
+        cutoffHz={def.id === 'filter' ? (p.cutoff as number) : undefined}
         active={playing}
         redrawKey={paramsKey}
         className="h-full w-full"
       />
-    ) : viewKind === 'transfer' ? (
+    )
+  } else if (viewKind === 'inout') {
+    inlineView = (
+      <OverlayWaveform
+        stages={[
+          { id: upstreamId, colorVar: '--stage-dry-on-black', label: 'in', bypassed: false },
+          { id: effect.instanceId, colorVar, label: 'out', bypassed: effect.bypassed },
+        ]}
+        getAnalyser={(id) => engine.getWaveAnalyser(id)}
+        spanSec={0.02}
+        active={playing}
+        className="h-full w-full"
+      />
+    )
+  } else if (viewKind === 'comp') {
+    inlineView = (
+      <CompressorView
+        getInstance={() => engine.getEffectInstance(effect.instanceId)}
+        getInputAnalyser={() => engine.getWaveAnalyser(upstreamId)}
+        colorVar={colorVar}
+        active={playing}
+        redrawKey={paramsKey}
+        className="h-full w-full"
+      />
+    )
+  } else if (viewKind === 'transfer') {
+    inlineView = (
       <FrozenCanvas
         redrawKey={paramsKey}
         draw={(c, w, h) => {
@@ -72,9 +120,34 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         }}
         className="h-full w-full"
       />
-    ) : (
-      <Waveform getAnalyser={() => engine.getAnalyser(effect.instanceId)} colorVar={colorVar} active={playing} className="h-full w-full" />
     )
+  } else if (viewKind === 'echoes') {
+    inlineView = (
+      <FrozenCanvas
+        redrawKey={paramsKey}
+        draw={(c, w, h) => drawDelayEchoes(c, w, h, p.time as number, p.feedback as number, p.wet as number, colorVar)}
+        className="h-full w-full"
+      />
+    )
+  } else if (viewKind === 'decay') {
+    inlineView = (
+      <FrozenCanvas
+        redrawKey={paramsKey}
+        draw={(c, w, h) => drawReverbDecay(c, w, h, p.decay as number, p.predelay as number, p.damping as number, colorVar)}
+        className="h-full w-full"
+      />
+    )
+  } else if (viewKind === 'lfo') {
+    inlineView = (
+      <FrozenCanvas
+        redrawKey={paramsKey}
+        draw={(c, w, h) => drawLFO(c, w, h, p.rate as number, p.depth as number, p.mode as ModMode, colorVar)}
+        className="h-full w-full"
+      />
+    )
+  } else {
+    inlineView = <Waveform getAnalyser={() => engine.getAnalyser(effect.instanceId)} colorVar={colorVar} active={playing} className="h-full w-full" />
+  }
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),

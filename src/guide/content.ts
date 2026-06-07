@@ -11,7 +11,7 @@ export interface EffectGuide {
 export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   utility: {
     what: 'Adjusts level and pan without changing tone. Phase-invert flips the wave vertically.',
-    watch: 'The whole waveform scales up/down; the spectrum shape is unchanged. Phase-invert flips the wave but the spectrum is identical.',
+    watch: "The module's in-vs-out view ghosts the input behind the output: gain makes the output taller/shorter; phase-invert flips it; the spectrum shape never changes.",
     try: 'Invert the phase and watch the spectrum stay put while the waveform mirrors.',
     ableton: 'Utility',
   },
@@ -29,7 +29,7 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   compressor: {
     what: 'Turns down anything above the threshold by a ratio, shrinking dynamic range; makeup gain restores level.',
-    watch: 'In the waveform, peaks get squashed and quiet parts come up — a fuller, more even shape.',
+    watch: "The module shows the threshold/ratio knee with a live dot that rides up the curve and flattens once it crosses the threshold; the GR readout shows how many dB it's pulling down right now.",
     try: 'Use the drum loop with a low threshold and high ratio, then sweep attack and watch the transients survive or not.',
     ableton: 'Compressor',
   },
@@ -41,7 +41,7 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   delay: {
     what: 'Repeats the signal on a timer; feedback sets how many repeats you hear.',
-    watch: 'Use the Waveform → Envelope timebase (with a drum/pluck source) to see evenly spaced, fading echoes; the spectrogram shows the same as recurring stripes. Very short times create comb ripples in the spectrum.',
+    watch: "The module's echo diagram shows the dry hit then taps spaced at the delay time, each feedback× shorter. In the big view, the Waveform → Envelope timebase shows the echoes between drum hits; the spectrogram shows recurring stripes.",
     try: 'On the drum loop, switch to Envelope and watch the echoes fall between the hits. Then drop the time to a few ms to morph the echo into a comb filter — the bridge to Modulation.',
     ableton: 'Delay / Echo',
   },
@@ -53,7 +53,7 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   modulation: {
     what: 'A slow LFO nudges a parameter: short-delay = chorus/flanger, allpass sweep = phaser, volume = tremolo, pan = auto-pan.',
-    watch: 'In the spectrum/spectrogram, moving comb/notch patterns; tremolo pulses the amplitude.',
+    watch: "The module draws the LFO itself over a few seconds — Rate sets how many wiggles, Depth their size — labelled with what it modulates. In the spectrum/spectrogram you'll see the resulting comb/notch pattern move; tremolo pulses the amplitude.",
     try: 'Use a slow-rate Flanger and watch the notches glide across the spectrum.',
     ableton: 'Chorus / Phaser-Flanger / Auto Pan',
   },

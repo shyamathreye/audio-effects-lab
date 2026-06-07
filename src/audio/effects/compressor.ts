@@ -92,6 +92,9 @@ export const compressor: EffectDef = {
         }
         return out
       },
+      getReduction() {
+        return comp.reduction
+      },
       dispose() {
         comp.disconnect()
         makeup.disconnect()

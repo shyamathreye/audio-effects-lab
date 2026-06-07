@@ -36,6 +36,8 @@ export interface EffectInstance {
   /** Optional: input→output transfer curve sampled over x ∈ [−1, 1], for a
       transfer-curve mini-view (waveshaper distortion, compressor knee). */
   getTransferCurve?(points: number): Float32Array<ArrayBuffer>
+  /** Optional: current gain reduction in dB (≤ 0), for a compressor meter. */
+  getReduction?(): number
 }
 
 export interface EffectDef {

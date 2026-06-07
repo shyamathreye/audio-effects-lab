@@ -1,5 +1,9 @@
 # VizE — Audio Effects Lab
 
+[![Deploy to GitHub Pages](https://github.com/shyamathreye/audio-effects-lab/actions/workflows/deploy.yml/badge.svg)](https://github.com/shyamathreye/audio-effects-lab/actions/workflows/deploy.yml)
+
+**▶ Live demo: https://shyamathreye.github.io/audio-effects-lab/**
+
 An interactive, browser-based tool for hearing and **seeing** what audio effects
 do to a sound wave — styled as a friendly modular-synth patch bay. Generate a
 sound, build a reorderable chain of effects, toggle each on/off, and watch the

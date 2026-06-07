@@ -39,6 +39,10 @@ npm test           # run fixture / unit tests (vitest)
 - **M4 — Sources** (noise, synth drum/pad/melodic loops, file upload),
   **learning-guide drawer** (Part 5 copy), **patch-bay skin** (mint cables,
   knobs, LCD), perf gating + reduced-motion + empty states.
+- **Enhancements** — Combined/Individual visualizer layouts; a **Wave/Envelope**
+  waveform timebase (so delay repeats & reverb tails are visible); and the
+  **Bitcrusher** stretch effect (first AudioWorklet; processor in
+  `public/bitcrusher-processor.js`).
 
 Effect behavior is verified against the descriptions in PRD Part 3 (the
 reference render images are not bundled in this repo). Run the in-app fixtures

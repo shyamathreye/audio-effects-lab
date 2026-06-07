@@ -7,8 +7,10 @@ import { distortion } from './distortion'
 import { delay } from './delay'
 import { reverb } from './reverb'
 import { modulation } from './modulation'
+import { bitcrusher } from './bitcrusher'
 
-// Effect registry — the full v1 set (PRD §1.2 / §4.4), ordered as in the PRD.
+// Effect registry — the full v1 set (PRD §1.2 / §4.4), ordered as in the PRD,
+// plus the Bitcrusher stretch (§1.3, first AudioWorklet).
 export const EFFECTS: EffectDef[] = [
   utility,
   filter,
@@ -18,6 +20,7 @@ export const EFFECTS: EffectDef[] = [
   delay,
   reverb,
   modulation,
+  bitcrusher,
 ]
 
 export const EFFECTS_BY_ID: Record<string, EffectDef> = Object.fromEntries(

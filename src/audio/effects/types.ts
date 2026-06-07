@@ -40,6 +40,8 @@ export interface EffectDef {
   /** Stage color token name (§2A.2), e.g. 'stage-filter'. */
   colorToken: StageColorToken
   params: ParamSpec[]
+  /** True if build() requires an AudioWorklet module to be registered first. */
+  needsWorklet?: boolean
   build(ctx: BaseAudioContext): EffectInstance
 }
 
@@ -52,6 +54,7 @@ export type StageColorToken =
   | 'stage-delay'
   | 'stage-reverb'
   | 'stage-modulation'
+  | 'stage-bitcrusher'
 
 /** Resolve a ParamSpec's default into its initial value map. */
 export function defaultParams(def: EffectDef): Record<string, ParamValue> {

@@ -1,4 +1,5 @@
 import type { EffectDef, ParamValue } from '../audio/effects/types'
+import { ensureBitcrusherModule } from '../audio/worklets'
 
 // Offline-render harness for fixture tests (PRD §4.7). Builds a known source,
 // optionally routes it through an effect, and renders to a buffer we can analyze
@@ -78,9 +79,11 @@ function makeSource(ctx: OfflineAudioContext, opts: RenderOpts): AudioNode {
 async function render(
   opts: RenderOpts,
   insert: ((ctx: OfflineAudioContext, src: AudioNode) => AudioNode) | null,
+  prep?: (ctx: OfflineAudioContext) => Promise<void>,
 ): Promise<RenderResult> {
   const sr = opts.sr ?? 44100
   const ctx = new OfflineAudioContext(1, Math.ceil(opts.dur * sr), sr)
+  if (prep) await prep(ctx)
   const src = makeSource(ctx, opts)
   const tail = insert ? insert(ctx, src) : src
   tail.connect(ctx.destination)
@@ -99,10 +102,14 @@ export function renderThrough(
   params: Record<string, ParamValue>,
   opts: RenderOpts,
 ): Promise<RenderResult> {
-  return render(opts, (ctx, src) => {
-    const fx = def.build(ctx)
-    for (const [k, v] of Object.entries(params)) fx.setParam(k, v)
-    src.connect(fx.input)
-    return fx.output
-  })
+  return render(
+    opts,
+    (ctx, src) => {
+      const fx = def.build(ctx)
+      for (const [k, v] of Object.entries(params)) fx.setParam(k, v)
+      src.connect(fx.input)
+      return fx.output
+    },
+    def.needsWorklet ? (ctx) => ensureBitcrusherModule(ctx) : undefined,
+  )
 }

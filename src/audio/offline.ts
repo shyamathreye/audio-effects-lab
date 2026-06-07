@@ -2,6 +2,7 @@ import type { ChainEffect } from '../state/store'
 import type { SourceConfig } from './sources/types'
 import { createSource } from './sources'
 import { getEffectDef } from './effects'
+import { ensureBitcrusherModule } from './worklets'
 import { clamp } from './util'
 
 // Freeze rendering (PRD §4.3/§4.7): re-render the current source + chain through
@@ -53,6 +54,9 @@ async function renderPrefix(
   sr: number,
 ): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, Math.ceil(durSec * sr), sr)
+  if (active.some((e) => getEffectDef(e.defId)?.needsWorklet)) {
+    await ensureBitcrusherModule(ctx)
+  }
   let node = makeOfflineSource(ctx, config, fileBuffer)
   if (!node) return new Float32Array(Math.ceil(durSec * sr))
   for (const e of active) {

@@ -123,5 +123,17 @@ export async function runEffectFixtures(): Promise<FixtureResult[]> {
     out.push({ id: 'modulation', name: 'Modulation', pass: cvW > cvD * 5 && cvW > 0.02, detail: `amplitude variation ${num(cvD, 4)}→${num(cvW, 3)}` })
   }
 
+  // 9 · Bitcrusher — quantization + downsampling sprout broadband content (both
+  // harmonics and non-harmonic aliasing) where a clean sine has almost none.
+  {
+    const o: RenderOpts = { source: 'sine', freq: 220, dur: 0.4 }
+    const dry = await renderDry(o)
+    const wet = await renderThrough(def('bitcrusher'), { bits: 3, downsample: 8, wet: 1 }, o)
+    const dHi = bandEnergy(dry.data, dry.sr, 1500, 18000)
+    const wHi = bandEnergy(wet.data, wet.sr, 1500, 18000)
+    const ratio = wHi / Math.max(1e-12, dHi)
+    out.push({ id: 'bitcrusher', name: 'Bitcrusher', pass: ratio > 20, detail: `>1.5kHz energy ×${num(ratio, 1)} of clean sine` })
+  }
+
   return out
 }

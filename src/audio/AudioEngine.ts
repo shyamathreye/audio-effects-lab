@@ -3,6 +3,7 @@ import { createTap, rewireWithCrossfade } from './graph'
 import type { ChainEndpoints, RuntimeEffect, Tap } from './graph'
 import { createSource } from './sources'
 import type { SourceConfig, SourceInstance } from './sources/types'
+import { ensureBitcrusherModule } from './worklets'
 import { dbToGain } from './util'
 
 export type StageId = string // 'dry' | effect instance id
@@ -46,6 +47,9 @@ export class AudioEngine {
     this.outputGain.connect(this.master)
     this.master.connect(this.masterAnalyser)
     this.masterAnalyser.connect(this.ctx.destination)
+
+    // preload the bitcrusher worklet so it's ready by the time it's added
+    ensureBitcrusherModule(this.ctx).catch(() => {})
 
     this.rewire()
   }
@@ -143,7 +147,8 @@ export class AudioEngine {
 
   // ---- chain ---------------------------------------------------------------
 
-  addEffect(instanceId: string, def: EffectDef, bypassed = false): void {
+  async addEffect(instanceId: string, def: EffectDef, bypassed = false): Promise<void> {
+    if (def.needsWorklet) await ensureBitcrusherModule(this.ctx)
     const instance = def.build(this.ctx)
     const tap = createTap(this.ctx)
     this.effects.push({ id: instanceId, instance, tap, bypassed })

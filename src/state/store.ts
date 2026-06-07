@@ -59,7 +59,7 @@ interface AppState {
   loadFile: (file: File) => Promise<void>
   setMasterDb: (db: number) => void
 
-  addEffect: (defId: string) => void
+  addEffect: (defId: string) => Promise<void>
   removeEffect: (instanceId: string) => void
   reorder: (orderedIds: string[]) => void
   toggleBypass: (instanceId: string) => void
@@ -149,12 +149,12 @@ export const useStore = create<AppState>((set, get) => ({
     set({ masterDb: db })
   },
 
-  addEffect(defId) {
+  async addEffect(defId) {
     const def = getEffectDef(defId)
     if (!def) return
     const instanceId = nextId(defId)
     const params = defaultParams(def)
-    engine.addEffect(instanceId, def)
+    await engine.addEffect(instanceId, def)
     // Push defaults into the freshly built instance.
     for (const [k, v] of Object.entries(params)) {
       engine.setEffectParam(instanceId, k, v)

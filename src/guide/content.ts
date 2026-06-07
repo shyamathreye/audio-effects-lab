@@ -57,6 +57,12 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
     try: 'Use a slow-rate Flanger and watch the notches glide across the spectrum.',
     ableton: 'Chorus / Phaser-Flanger / Auto Pan',
   },
+  bitcrusher: {
+    what: 'Degrades the signal two ways: fewer bits (coarser amplitude steps) and a lower sample rate (sample-and-hold), for a lo-fi/digital crunch.',
+    watch: 'In the waveform the smooth curve turns into stair-steps; in the spectrum, new aliasing partials appear (often at non-harmonic frequencies).',
+    try: 'Drop Bits to 3–4 on a sine and watch it square up; then raise Downsample and watch aliasing spikes appear.',
+    ableton: 'Redux',
+  },
 }
 
 export interface Primer {

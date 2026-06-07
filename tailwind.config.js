@@ -27,6 +27,7 @@ export default {
         'stage-delay': 'var(--stage-delay)',
         'stage-reverb': 'var(--stage-reverb)',
         'stage-modulation': 'var(--stage-modulation)',
+        'stage-bitcrusher': 'var(--stage-bitcrusher)',
       },
       borderRadius: {
         panel: '20px',

@@ -7,7 +7,8 @@ import type { ParamSpec } from '../audio/effects/types'
 import { ParamControl } from './ParamControl'
 import { Waveform } from '../viz/Waveform'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
-import { drawFrequencyResponse, drawTransferCurve } from '../viz/responseDraw'
+import { drawTransferCurve } from '../viz/responseDraw'
+import { ResponseSpectrumView } from '../viz/ResponseSpectrumView'
 
 function visible(spec: ParamSpec, params: ChainEffect['params']): boolean {
   if (!spec.showWhen) return true
@@ -22,6 +23,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const openInfo = useStore((s) => s.openInfo)
   const engine = useStore((s) => s.engine)
   const playing = useStore((s) => s.playing)
+  const chain = useStore((s) => s.chain)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: effect.instanceId,
@@ -44,16 +46,21 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const sr = engine.ctx.sampleRate
   const paramsKey = JSON.stringify(effect.params)
   const caption =
-    viewKind === 'response' ? 'frequency response' : viewKind === 'transfer' ? 'in → out' : 'waveform'
+    viewKind === 'response' ? 'spectrum + response' : viewKind === 'transfer' ? 'in → out' : 'waveform'
+
+  // the signal arriving at this effect = output of the upstream stage
+  const upstreamId = index === 0 ? 'dry' : (chain[index - 1]?.instanceId ?? 'dry')
 
   const inlineView =
     viewKind === 'response' ? (
-      <FrozenCanvas
+      <ResponseSpectrumView
+        response={(freqs) => engine.getEffectInstance(effect.instanceId)?.getFrequencyResponse?.(freqs) ?? null}
+        getInputAnalyser={() => engine.getAnalyser(upstreamId)}
+        sampleRate={sr}
+        colorVar={colorVar}
+        cutoffHz={def.id === 'filter' ? (effect.params.cutoff as number) : undefined}
+        active={playing}
         redrawKey={paramsKey}
-        draw={(c, w, h) => {
-          const inst = engine.getEffectInstance(effect.instanceId)
-          if (inst) drawFrequencyResponse(c, w, h, inst, sr, colorVar, def.id === 'filter' ? (effect.params.cutoff as number) : undefined)
-        }}
         className="h-full w-full"
       />
     ) : viewKind === 'transfer' ? (

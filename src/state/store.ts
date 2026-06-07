@@ -18,6 +18,8 @@ export interface ChainEffect {
 export type ViewKind = 'waveform' | 'spectrum' | 'spectrogram'
 export type VizLayout = 'combined' | 'individual'
 export type VizMode = 'live' | 'freeze'
+/** Waveform timebase: a short window (cycle shape) vs a long amplitude envelope. */
+export type Timebase = 'wave' | 'envelope'
 
 let instanceCounter = 0
 const nextId = (defId: string) => `${defId}-${++instanceCounter}`
@@ -37,6 +39,7 @@ interface AppState {
   chain: ChainEffect[]
   view: ViewKind
   vizLayout: VizLayout
+  timebase: Timebase
   vizMode: VizMode
   frozen: FrozenData | null
   /** bumped each freeze so frozen canvases redraw */
@@ -64,6 +67,7 @@ interface AppState {
 
   setView: (view: ViewKind) => void
   setVizLayout: (layout: VizLayout) => void
+  setTimebase: (t: Timebase) => void
   freeze: () => Promise<void>
   goLive: () => void
   openInfo: (defId: string | null) => void
@@ -80,6 +84,7 @@ export const useStore = create<AppState>((set, get) => ({
   chain: [],
   view: 'waveform',
   vizLayout: 'combined',
+  timebase: 'wave',
   vizMode: 'live',
   frozen: null,
   freezeId: 0,
@@ -199,6 +204,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
   setVizLayout(layout) {
     set({ vizLayout: layout })
+  },
+  setTimebase(t) {
+    set({ timebase: t })
   },
   async freeze() {
     const { source, chain } = get()

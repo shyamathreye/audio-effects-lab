@@ -2,10 +2,11 @@ import { useStore } from '../state/store'
 import type { ViewKind, VizLayout } from '../state/store'
 import { Waveform } from '../viz/Waveform'
 import { OverlayWaveform } from '../viz/OverlayWaveform'
+import { EnvelopeWaveform } from '../viz/EnvelopeWaveform'
 import { Spectrum } from '../viz/Spectrum'
 import { Spectrogram } from '../viz/Spectrogram'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
-import { drawFrozenWaveform, drawFrozenSpectrum, drawFrozenSpectrogram } from '../viz/frozenDraw'
+import { drawFrozenWaveform, drawFrozenEnvelope, drawFrozenSpectrum, drawFrozenSpectrogram } from '../viz/frozenDraw'
 import { stageRefs } from '../viz/stages'
 import type { StageRef } from '../viz/stages'
 import type { FrozenStage } from '../audio/offline'
@@ -27,6 +28,8 @@ export function Visualizer() {
   const setView = useStore((s) => s.setView)
   const layout = useStore((s) => s.vizLayout)
   const setVizLayout = useStore((s) => s.setVizLayout)
+  const timebase = useStore((s) => s.timebase)
+  const setTimebase = useStore((s) => s.setTimebase)
   const mode = useStore((s) => s.vizMode)
   const frozen = useStore((s) => s.frozen)
   const freezeId = useStore((s) => s.freezeId)
@@ -36,6 +39,7 @@ export function Visualizer() {
   const engine = useStore((s) => s.engine)
   const chain = useStore((s) => s.chain)
   const playing = useStore((s) => s.playing)
+  const source = useStore((s) => s.source)
 
   const live = mode === 'live' || !frozen
   const liveStages = stageRefs(chain)
@@ -45,13 +49,26 @@ export function Visualizer() {
   const getAnalyser = (id: string) => engine.getAnalyser(id)
 
   // ---- combined ------------------------------------------------------------
+  const envelope = timebase === 'envelope'
   const renderCombined = () => {
     if (live) {
-      if (view === 'waveform') return <OverlayWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+      if (view === 'waveform')
+        return envelope ? (
+          <EnvelopeWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+        ) : (
+          <OverlayWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+        )
       if (view === 'spectrum') return <Spectrum stages={liveStages} getAnalyser={getAnalyser} sampleRate={sr} active={playing} className="h-full w-full" />
       return <Spectrogram getAnalyser={() => engine.getAnalyser('master')} sampleRate={sr} active={playing} className="h-full w-full" />
     }
-    if (view === 'waveform') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenWaveform(c, w, h, frozenStages, sr)} className="h-full w-full" />
+    if (view === 'waveform')
+      return (
+        <FrozenCanvas
+          redrawKey={`${freezeId}:${timebase}`}
+          draw={(c, w, h) => (envelope ? drawFrozenEnvelope(c, w, h, frozenStages, sr) : drawFrozenWaveform(c, w, h, frozenStages, sr))}
+          className="h-full w-full"
+        />
+      )
     if (view === 'spectrum') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenSpectrum(c, w, h, frozenStages, sr)} className="h-full w-full" />
     const out = frozenStages[frozenStages.length - 1]
     return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => out && drawFrozenSpectrogram(c, w, h, out, sr)} className="h-full w-full" />
@@ -60,12 +77,24 @@ export function Visualizer() {
   // ---- individual (one scope per stage) ------------------------------------
   const renderStageScope = (s: StageRef | FrozenStage) => {
     if (live) {
-      if (view === 'waveform') return <Waveform getAnalyser={() => getAnalyser(s.id)} colorVar={s.colorVar} active={playing} className="h-full w-full" />
+      if (view === 'waveform')
+        return envelope ? (
+          <EnvelopeWaveform stages={[s as StageRef]} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+        ) : (
+          <Waveform getAnalyser={() => getAnalyser(s.id)} colorVar={s.colorVar} active={playing} className="h-full w-full" />
+        )
       if (view === 'spectrum') return <Spectrum stages={[s as StageRef]} getAnalyser={getAnalyser} sampleRate={sr} fill active={playing} className="h-full w-full" />
       return <Spectrogram getAnalyser={() => getAnalyser(s.id)} sampleRate={sr} active={playing} className="h-full w-full" />
     }
     const fs = s as FrozenStage
-    if (view === 'waveform') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenWaveform(c, w, h, [fs], sr)} className="h-full w-full" />
+    if (view === 'waveform')
+      return (
+        <FrozenCanvas
+          redrawKey={`${freezeId}:${timebase}`}
+          draw={(c, w, h) => (envelope ? drawFrozenEnvelope(c, w, h, [fs], sr) : drawFrozenWaveform(c, w, h, [fs], sr))}
+          className="h-full w-full"
+        />
+      )
     if (view === 'spectrum') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenSpectrum(c, w, h, [fs], sr, true)} className="h-full w-full" />
     return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenSpectrogram(c, w, h, fs, sr)} className="h-full w-full" />
   }
@@ -97,6 +126,24 @@ export function Visualizer() {
             </button>
           ))}
         </div>
+
+        {/* Wave / Envelope timebase — only meaningful for the waveform view */}
+        {view === 'waveform' && (
+          <div className="flex overflow-hidden rounded-control ring-1 ring-outline">
+            {([{ id: 'wave', label: 'Wave' }, { id: 'envelope', label: 'Envelope' }] as const).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTimebase(t.id)}
+                title={t.id === 'envelope' ? 'Long timebase — see delay repeats & reverb tails' : 'Short window — see the wave shape'}
+                className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
+                  timebase === t.id ? 'bg-coral text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Live / Freeze */}
         <div className="flex overflow-hidden rounded-control ring-1 ring-outline">
@@ -151,6 +198,12 @@ export function Visualizer() {
             </div>
           ))}
         </div>
+      )}
+
+      {view === 'waveform' && envelope && source.kind === 'oscillator' && source.mode === 'drone' && (
+        <p className="px-1 font-mono text-[10px] text-cream/45">
+          tip: a steady drone has a flat envelope — switch the source to Pluck, a Loop, or a file to see delay repeats &amp; reverb tails over time.
+        </p>
       )}
     </section>
   )

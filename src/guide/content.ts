@@ -41,13 +41,13 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   delay: {
     what: 'Repeats the signal on a timer; feedback sets how many repeats you hear.',
-    watch: 'In the spectrogram, evenly spaced fading echoes. Very short times create comb ripples in the spectrum.',
-    try: 'Drop the time to a few milliseconds to morph the echo into a comb filter — the bridge to Modulation.',
+    watch: 'Use the Waveform → Envelope timebase (with a drum/pluck source) to see evenly spaced, fading echoes; the spectrogram shows the same as recurring stripes. Very short times create comb ripples in the spectrum.',
+    try: 'On the drum loop, switch to Envelope and watch the echoes fall between the hits. Then drop the time to a few ms to morph the echo into a comb filter — the bridge to Modulation.',
     ableton: 'Delay / Echo',
   },
   reverb: {
     what: 'Dense random reflections blur the sound into a tail.',
-    watch: 'In the spectrogram, energy smears and fades after each sound; damping shortens the top of the tail.',
+    watch: 'In the Waveform → Envelope timebase (or the spectrogram), energy smears and fades after each sound; damping shortens the top of the tail.',
     try: 'Use one drum hit, raise Decay, then raise Damping and watch the bright tail get shorter.',
     ableton: 'Reverb / Hybrid',
   },

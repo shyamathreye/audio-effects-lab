@@ -56,6 +56,72 @@ export function drawFrozenWaveform(
   ctx.globalAlpha = 1
 }
 
+// Full-buffer amplitude envelope (peak per pixel-column) over the whole rendered
+// duration — the frozen counterpart to the live envelope. Delay/reverb tails and
+// tremolo are legible across the full time axis.
+export function drawFrozenEnvelope(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  stages: FrozenStage[],
+  sr: number,
+): void {
+  clearLcd(ctx, w, h)
+  const mid = h / 2
+
+  // time gridlines every 0.5 s
+  const dur = stages[0] ? stages[0].data.length / sr : 0
+  ctx.strokeStyle = cssVar('--lcd-grid')
+  ctx.fillStyle = cssVar('--lcd-grid')
+  ctx.lineWidth = 1
+  ctx.font = `${Math.round(h * 0.07)}px ui-monospace, monospace`
+  ctx.beginPath()
+  ctx.moveTo(0, mid)
+  ctx.lineTo(w, mid)
+  ctx.stroke()
+  for (let t = 0.5; t < dur; t += 0.5) {
+    const x = (t / dur) * w
+    ctx.globalAlpha = 0.5
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, h)
+    ctx.stroke()
+    ctx.globalAlpha = 1
+    ctx.fillText(`${t}s`, x + 2, h - 3)
+  }
+
+  for (const stage of stages) {
+    const d = stage.data
+    const per = Math.max(1, Math.floor(d.length / w))
+    ctx.fillStyle = cssVar(stage.colorVar)
+    ctx.globalAlpha = stage.bypassed ? 0.2 : stages.length > 1 ? 0.5 : 0.85
+    ctx.beginPath()
+    for (let x = 0; x < w; x++) {
+      let peak = 0
+      const start = x * per
+      for (let i = start; i < start + per && i < d.length; i++) {
+        const a = Math.abs(d[i])
+        if (a > peak) peak = a
+      }
+      const y = mid - peak * mid * 0.92
+      if (x === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    for (let x = w - 1; x >= 0; x--) {
+      let peak = 0
+      const start = x * per
+      for (let i = start; i < start + per && i < d.length; i++) {
+        const a = Math.abs(d[i])
+        if (a > peak) peak = a
+      }
+      ctx.lineTo(x, mid + peak * mid * 0.92)
+    }
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+}
+
 export function drawFrozenSpectrum(
   ctx: CanvasRenderingContext2D,
   w: number,

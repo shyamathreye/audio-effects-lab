@@ -1,5 +1,6 @@
 import type { ChainEffect } from '../state/store'
-import type { OscConfig } from './sources/types'
+import type { SourceConfig } from './sources/types'
+import { createSource } from './sources'
 import { getEffectDef } from './effects'
 import { clamp } from './util'
 
@@ -20,28 +21,40 @@ export interface FrozenData {
   stages: FrozenStage[]
 }
 
-function makeOscSource(ctx: OfflineAudioContext, cfg: OscConfig): AudioNode {
-  const osc = ctx.createOscillator()
-  osc.type = cfg.wave
-  osc.frequency.value = clamp(cfg.freq, 20, 20000)
-  const g = ctx.createGain()
-  const lvl = clamp(cfg.level, 0, 1)
-  // tiny fade-in avoids a t=0 click; otherwise a steady drone for stable spectra
-  g.gain.setValueAtTime(0, 0)
-  g.gain.linearRampToValueAtTime(lvl, 0.01)
-  osc.connect(g)
-  osc.start(0)
-  return g
+// For freeze we want a steady drone (stable spectra), so the oscillator is built
+// directly here; other source kinds reuse the shared factory.
+function makeOfflineSource(
+  ctx: OfflineAudioContext,
+  cfg: SourceConfig,
+  fileBuffer: AudioBuffer | null,
+): AudioNode | null {
+  if (cfg.kind === 'oscillator') {
+    const osc = ctx.createOscillator()
+    osc.type = cfg.wave
+    osc.frequency.value = clamp(cfg.freq, 20, 20000)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0, 0)
+    g.gain.linearRampToValueAtTime(clamp(cfg.level, 0, 1), 0.01)
+    osc.connect(g)
+    osc.start(0)
+    return g
+  }
+  const src = createSource(ctx, cfg, fileBuffer)
+  if (!src) return null
+  src.start(0)
+  return src.output
 }
 
 async function renderPrefix(
-  config: OscConfig,
+  config: SourceConfig,
+  fileBuffer: AudioBuffer | null,
   active: ChainEffect[],
   durSec: number,
   sr: number,
 ): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, Math.ceil(durSec * sr), sr)
-  let node = makeOscSource(ctx, config)
+  let node = makeOfflineSource(ctx, config, fileBuffer)
+  if (!node) return new Float32Array(Math.ceil(durSec * sr))
   for (const e of active) {
     const def = getEffectDef(e.defId)
     if (!def) continue
@@ -59,21 +72,22 @@ async function renderPrefix(
 // non-bypassed effects up to and including that position (bypassed effects pass
 // through, exactly as in the live graph).
 export async function renderStages(
-  config: OscConfig,
+  config: SourceConfig,
   chain: ChainEffect[],
+  fileBuffer: AudioBuffer | null = null,
   durSec = 1.6,
   sr = 44100,
 ): Promise<FrozenData> {
   const stages: FrozenStage[] = []
 
-  const dry = await renderPrefix(config, [], durSec, sr)
+  const dry = await renderPrefix(config, fileBuffer, [], durSec, sr)
   stages.push({ id: 'dry', label: 'Source', colorVar: '--stage-dry-on-black', bypassed: false, data: dry })
 
   for (let i = 0; i < chain.length; i++) {
     const def = getEffectDef(chain[i].defId)
     if (!def) continue
     const active = chain.slice(0, i + 1).filter((e) => !e.bypassed)
-    const data = await renderPrefix(config, active, durSec, sr)
+    const data = await renderPrefix(config, fileBuffer, active, durSec, sr)
     stages.push({
       id: chain[i].instanceId,
       label: def.name,

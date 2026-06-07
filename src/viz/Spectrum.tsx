@@ -20,6 +20,7 @@ interface SpectrumProps {
 export function Spectrum({ stages, getAnalyser, sampleRate, active = true, fill = false, className }: SpectrumProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(1024))
+  const drawRef = useRef<() => void>(() => {})
   const stagesRef = useRef(stages)
   stagesRef.current = stages
 
@@ -34,7 +35,11 @@ export function Spectrum({ stages, getAnalyser, sampleRate, active = true, fill 
 
   useEffect(() => {
     resize()
-    const ro = new ResizeObserver(resize)
+    drawRef.current()
+    const ro = new ResizeObserver(() => {
+      resize()
+      drawRef.current()
+    })
     if (canvasRef.current) ro.observe(canvasRef.current)
     return () => ro.disconnect()
   }, [resize])
@@ -109,6 +114,7 @@ export function Spectrum({ stages, getAnalyser, sampleRate, active = true, fill 
     ctx.globalAlpha = 1
   }, [getAnalyser, sampleRate, fill])
 
+  drawRef.current = draw
   useRafLoop(draw, active)
 
   return <canvas ref={canvasRef} className={className} />

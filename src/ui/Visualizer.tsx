@@ -35,6 +35,7 @@ export function Visualizer() {
   const goLive = useStore((s) => s.goLive)
   const engine = useStore((s) => s.engine)
   const chain = useStore((s) => s.chain)
+  const playing = useStore((s) => s.playing)
 
   const live = mode === 'live' || !frozen
   const liveStages = stageRefs(chain)
@@ -46,9 +47,9 @@ export function Visualizer() {
   // ---- combined ------------------------------------------------------------
   const renderCombined = () => {
     if (live) {
-      if (view === 'waveform') return <OverlayWaveform stages={liveStages} getAnalyser={getAnalyser} className="h-full w-full" />
-      if (view === 'spectrum') return <Spectrum stages={liveStages} getAnalyser={getAnalyser} sampleRate={sr} className="h-full w-full" />
-      return <Spectrogram getAnalyser={() => engine.getAnalyser('master')} sampleRate={sr} className="h-full w-full" />
+      if (view === 'waveform') return <OverlayWaveform stages={liveStages} getAnalyser={getAnalyser} active={playing} className="h-full w-full" />
+      if (view === 'spectrum') return <Spectrum stages={liveStages} getAnalyser={getAnalyser} sampleRate={sr} active={playing} className="h-full w-full" />
+      return <Spectrogram getAnalyser={() => engine.getAnalyser('master')} sampleRate={sr} active={playing} className="h-full w-full" />
     }
     if (view === 'waveform') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenWaveform(c, w, h, frozenStages, sr)} className="h-full w-full" />
     if (view === 'spectrum') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenSpectrum(c, w, h, frozenStages, sr)} className="h-full w-full" />
@@ -59,9 +60,9 @@ export function Visualizer() {
   // ---- individual (one scope per stage) ------------------------------------
   const renderStageScope = (s: StageRef | FrozenStage) => {
     if (live) {
-      if (view === 'waveform') return <Waveform getAnalyser={() => getAnalyser(s.id)} colorVar={s.colorVar} className="h-full w-full" />
-      if (view === 'spectrum') return <Spectrum stages={[s as StageRef]} getAnalyser={getAnalyser} sampleRate={sr} fill className="h-full w-full" />
-      return <Spectrogram getAnalyser={() => getAnalyser(s.id)} sampleRate={sr} className="h-full w-full" />
+      if (view === 'waveform') return <Waveform getAnalyser={() => getAnalyser(s.id)} colorVar={s.colorVar} active={playing} className="h-full w-full" />
+      if (view === 'spectrum') return <Spectrum stages={[s as StageRef]} getAnalyser={getAnalyser} sampleRate={sr} fill active={playing} className="h-full w-full" />
+      return <Spectrogram getAnalyser={() => getAnalyser(s.id)} sampleRate={sr} active={playing} className="h-full w-full" />
     }
     const fs = s as FrozenStage
     if (view === 'waveform') return <FrozenCanvas redrawKey={freezeId} draw={(c, w, h) => drawFrozenWaveform(c, w, h, [fs], sr)} className="h-full w-full" />

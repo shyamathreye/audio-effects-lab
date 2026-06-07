@@ -17,7 +17,9 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const setParam = useStore((s) => s.setParam)
   const toggleBypass = useStore((s) => s.toggleBypass)
   const removeEffect = useStore((s) => s.removeEffect)
+  const openInfo = useStore((s) => s.openInfo)
   const engine = useStore((s) => s.engine)
+  const playing = useStore((s) => s.playing)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: effect.instanceId,
@@ -37,7 +39,9 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex w-56 shrink-0 flex-col rounded-panel ${bodyTone} shadow-lift ring-2 ring-outline ${
+      data-node
+      data-bypassed={effect.bypassed}
+      className={`relative z-10 flex w-56 shrink-0 flex-col rounded-panel ${bodyTone} shadow-lift ring-2 ring-outline ${
         effect.bypassed ? 'opacity-60' : ''
       }`}
     >
@@ -65,6 +69,14 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
           style={{ backgroundColor: effect.bypassed ? 'var(--grid)' : 'var(--lcd)' }}
         />
         <button
+          onClick={() => openInfo(effect.defId)}
+          aria-label="What does this effect do?"
+          title="Learn about this effect"
+          className="font-mono text-sm text-cream/80 hover:text-cream"
+        >
+          ⓘ
+        </button>
+        <button
           onClick={() => removeEffect(effect.instanceId)}
           aria-label="Remove effect"
           title="Remove"
@@ -79,6 +91,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         <Waveform
           getAnalyser={() => engine.getAnalyser(effect.instanceId)}
           colorVar={`--${def.colorToken}`}
+          active={playing}
           className="h-full w-full"
         />
       </div>

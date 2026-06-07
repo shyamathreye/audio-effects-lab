@@ -17,6 +17,46 @@ export interface OscConfig {
   mode: 'drone' | 'pluck'
 }
 
+export interface NoiseConfig {
+  kind: 'noise'
+  color: 'white' | 'pink'
+  level: number
+}
+
+export type LoopName = 'drum' | 'pad' | 'melodic'
+
+export interface LoopConfig {
+  kind: 'loop'
+  name: LoopName
+  level: number
+}
+
+export interface FileConfig {
+  kind: 'file'
+  level: number
+  /** display name of the uploaded file (the buffer itself lives in the engine) */
+  fileName: string
+}
+
+export type SourceConfig = OscConfig | NoiseConfig | LoopConfig | FileConfig
+export type SourceKind = SourceConfig['kind']
+
+// A loose patch over any source field (the union's Partial only exposes the
+// shared keys; this explicit shape allows kind-specific fields like `wave`).
+export interface SourcePatch {
+  wave?: OscWave
+  freq?: number
+  level?: number
+  attack?: number
+  decay?: number
+  sustain?: number
+  release?: number
+  mode?: 'drone' | 'pluck'
+  color?: 'white' | 'pink'
+  name?: LoopName
+  fileName?: string
+}
+
 export interface SourceInstance {
   output: AudioNode
   start(when?: number): void
@@ -35,3 +75,6 @@ export const DEFAULT_OSC: OscConfig = {
   release: 0.2,
   mode: 'drone',
 }
+
+export const DEFAULT_NOISE: NoiseConfig = { kind: 'noise', color: 'white', level: 0.4 }
+export const DEFAULT_LOOP: LoopConfig = { kind: 'loop', name: 'drum', level: 0.8 }

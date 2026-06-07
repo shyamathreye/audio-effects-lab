@@ -1,8 +1,8 @@
 import type { EffectDef, ParamValue } from './effects/types'
 import { createTap, rewireWithCrossfade } from './graph'
 import type { ChainEndpoints, RuntimeEffect, Tap } from './graph'
-import { createOscillator } from './sources/oscillator'
-import type { OscConfig, SourceInstance } from './sources/types'
+import { createSource } from './sources'
+import type { SourceConfig, SourceInstance } from './sources/types'
 import { dbToGain } from './util'
 
 export type StageId = string // 'dry' | effect instance id
@@ -20,7 +20,8 @@ export class AudioEngine {
   private dryTap: Tap
 
   private source: SourceInstance | null = null
-  private sourceConfig: OscConfig | null = null
+  private sourceConfig: SourceConfig | null = null
+  private fileBuffer: AudioBuffer | null = null
   private effects: RuntimeEffect[] = []
 
   private _playing = false
@@ -70,9 +71,13 @@ export class AudioEngine {
     return this._playing
   }
 
+  getFileBuffer(): AudioBuffer | null {
+    return this.fileBuffer
+  }
+
   // ---- transport -----------------------------------------------------------
 
-  setSourceConfig(cfg: OscConfig): void {
+  setSourceConfig(cfg: SourceConfig): void {
     this.sourceConfig = cfg
     if (this._playing) {
       // Rebuild the source live so changes are audible immediately.
@@ -80,14 +85,22 @@ export class AudioEngine {
     }
   }
 
+  /** Decode an uploaded file and switch the source to it. */
+  async loadFile(arrayBuffer: ArrayBuffer, fileName: string): Promise<void> {
+    const decoded = await this.ctx.decodeAudioData(arrayBuffer)
+    this.fileBuffer = decoded
+    this.sourceConfig = { kind: 'file', level: 0.9, fileName }
+    if (this._playing) this.rebuildSource()
+  }
+
   private rebuildSource(): void {
     this.source?.stop()
     this.source?.dispose()
     this.source = null
     if (this.sourceConfig) {
-      this.source = createOscillator(this.ctx, this.sourceConfig)
+      this.source = createSource(this.ctx, this.sourceConfig, this.fileBuffer)
       this.rewire()
-      this.source.start(this.ctx.currentTime + 0.02)
+      this.source?.start(this.ctx.currentTime + 0.02)
     }
   }
 

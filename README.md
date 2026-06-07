@@ -27,21 +27,22 @@ npm run lint       # type-check only (tsc --noEmit)
 npm test           # run fixture / unit tests (vitest)
 ```
 
-## Status — milestone delivery
+## Status — milestone delivery (all complete ✅)
 
-- **M1 — Engine + Chain ✅** — audio engine (context, master + clip indicator,
-  transport), oscillator source, live waveform scope, effect-chain with taps,
-  add/remove/drag-reorder/true-bypass with click-free crossfades. Ships Utility
-  and Filter effects.
-- **M2 — All 8 effects + inline scopes** (next): EQ3, Compressor, Distortion,
-  Delay, Reverb, Modulation, with per-effect fixture checks.
-- **M3 — Spectrum + Spectrogram, Live/Freeze, compare overlay.**
-- **M4 — Noise / synth loops / file upload, learning-guide drawer, full
-  patch-bay skin, perf + a11y polish.**
+- **M1 — Engine + Chain** — audio engine (context, master + clip indicator,
+  transport), oscillator source, live waveform, effect-chain with taps,
+  add/remove/drag-reorder/true-bypass with click-free crossfades.
+- **M2 — All 8 effects** — Utility, Filter, EQ3, Compressor, Distortion, Delay,
+  Reverb, Modulation at the PRD §4.4 verified defaults, with offline fixtures.
+- **M3 — Spectrum + Spectrogram views, Live/Freeze** (offline render + FFT),
+  Combined overlay + Individual per-stage layouts.
+- **M4 — Sources** (noise, synth drum/pad/melodic loops, file upload),
+  **learning-guide drawer** (Part 5 copy), **patch-bay skin** (mint cables,
+  knobs, LCD), perf gating + reduced-motion + empty states.
 
-See the PRD and the build plan for full detail. Effect behavior is verified
-against the descriptions in PRD Part 3 (the reference render images are not
-bundled in this repo).
+Effect behavior is verified against the descriptions in PRD Part 3 (the
+reference render images are not bundled in this repo). Run the in-app fixtures
+from the dev console: `await window.__vize.runEffectFixtures()`.
 
 ## Architecture
 

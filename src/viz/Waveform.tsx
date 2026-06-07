@@ -26,6 +26,7 @@ export function Waveform({
 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(2048))
+  const drawRef = useRef<() => void>(() => {})
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current
@@ -38,7 +39,11 @@ export function Waveform({
 
   useEffect(() => {
     resize()
-    const ro = new ResizeObserver(resize)
+    drawRef.current() // paint one static frame (grid + current/flat signal)
+    const ro = new ResizeObserver(() => {
+      resize()
+      drawRef.current()
+    })
     if (canvasRef.current) ro.observe(canvasRef.current)
     return () => ro.disconnect()
   }, [resize])
@@ -94,6 +99,7 @@ export function Waveform({
     ctx.stroke()
   }, [getAnalyser, colorVar, grid])
 
+  drawRef.current = draw
   useRafLoop(draw, active)
 
   return <canvas ref={canvasRef} className={className} />

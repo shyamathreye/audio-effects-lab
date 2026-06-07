@@ -70,7 +70,7 @@ export const DEFAULT_OSC: OscConfig = {
   kind: 'oscillator',
   wave: 'sawtooth',
   freq: 220,
-  level: 0.45,
+  level: 0.6,
   attack: 0.005,
   decay: 0.1,
   sustain: 0.7,
@@ -78,5 +78,5 @@ export const DEFAULT_OSC: OscConfig = {
   mode: 'drone',
 }
 
-export const DEFAULT_NOISE: NoiseConfig = { kind: 'noise', color: 'white', level: 0.3 }
-export const DEFAULT_LOOP: LoopConfig = { kind: 'loop', name: 'drum', level: 0.6 }
+export const DEFAULT_NOISE: NoiseConfig = { kind: 'noise', color: 'white', level: 0.45 }
+export const DEFAULT_LOOP: LoopConfig = { kind: 'loop', name: 'drum', level: 0.7 }

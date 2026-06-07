@@ -7,6 +7,7 @@ import { DEFAULT_OSC, DEFAULT_NOISE, DEFAULT_LOOP } from '../audio/sources/types
 import type { SourceConfig, SourceKind, SourcePatch } from '../audio/sources/types'
 import { renderStages } from '../audio/offline'
 import type { FrozenData } from '../audio/offline'
+import { DEFAULT_MASTER_DB } from '../audio/util'
 import { RECIPES } from '../guide/recipes'
 
 export interface ChainEffect {
@@ -91,7 +92,7 @@ export const useStore = create<AppState>((set, get) => ({
   source: DEFAULT_OSC,
   fileName: null,
   fileError: null,
-  masterDb: 0,
+  masterDb: DEFAULT_MASTER_DB,
   chain: [],
   view: 'waveform',
   vizLayout: 'combined',
@@ -252,8 +253,8 @@ export const useStore = create<AppState>((set, get) => ({
     const r = RECIPES.find((x) => x.id === recipeId)
     if (!r) return
     // reset master to a clean, safe level so every recipe plays as intended
-    engine.setMasterGainDb(0)
-    set({ masterDb: 0 })
+    engine.setMasterGainDb(DEFAULT_MASTER_DB)
+    set({ masterDb: DEFAULT_MASTER_DB })
     // source
     engine.setSourceConfig(r.source)
     set({ source: r.source, fileName: r.source.kind === 'file' ? get().fileName : null, fileError: null })

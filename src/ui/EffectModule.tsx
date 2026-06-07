@@ -186,7 +186,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
       style={style}
       data-node
       data-bypassed={effect.bypassed}
-      className={`relative z-10 flex w-56 shrink-0 flex-col rounded-panel ${bodyTone} shadow-lift ring-2 ring-outline ${
+      className={`relative z-10 flex w-48 shrink-0 flex-col rounded-panel sm:w-56 ${bodyTone} shadow-lift ring-2 ring-outline ${
         effect.bypassed ? 'opacity-60' : ''
       }`}
     >

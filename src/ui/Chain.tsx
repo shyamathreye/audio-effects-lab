@@ -61,7 +61,7 @@ export function Chain() {
           <Cables railRef={railRef} signature={signature} />
 
           {/* dry / source tap */}
-          <div data-node data-bypassed="false" className="relative z-10 flex w-40 shrink-0 flex-col rounded-panel bg-chassis ring-2 ring-grid">
+          <div data-node data-bypassed="false" className="relative z-10 flex w-32 shrink-0 flex-col rounded-panel bg-chassis ring-2 ring-grid sm:w-40">
             <div className="rounded-t-panel bg-grid px-3 py-2 text-sm font-semibold text-cream">Source</div>
             <div className="mx-3 mt-3 h-14 overflow-hidden rounded-control ring-1 ring-outline">
               <Waveform getAnalyser={() => engine.getAnalyser('dry')} colorVar="--stage-dry-on-black" active={playing} className="h-full w-full" />

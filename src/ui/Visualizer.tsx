@@ -236,7 +236,7 @@ export function Visualizer() {
 
       {view === 'response' ? (
         <>
-          <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">
+          <div className="h-48 overflow-hidden rounded-control ring-2 ring-outline sm:h-64">
             {responseStages.length > 0 ? (
               <ResponseGraph
                 stages={responseStages}
@@ -269,7 +269,7 @@ export function Visualizer() {
         </>
       ) : layout === 'combined' ? (
         <>
-          <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">{renderCombined()}</div>
+          <div className="h-48 overflow-hidden rounded-control ring-2 ring-outline sm:h-64">{renderCombined()}</div>
           {view !== 'spectrogram' && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 pt-1">
               {stages.map((s) => (
@@ -284,12 +284,12 @@ export function Visualizer() {
       ) : (
         <div className="flex items-stretch gap-3 overflow-x-auto rounded-control bg-outline/30 p-2 ring-1 ring-outline">
           {stages.map((s) => (
-            <div key={s.id} className={`flex w-56 shrink-0 flex-col rounded-control ring-1 ring-outline ${s.bypassed ? 'opacity-50' : ''}`}>
+            <div key={s.id} className={`flex w-44 shrink-0 flex-col rounded-control ring-1 ring-outline sm:w-56 ${s.bypassed ? 'opacity-50' : ''}`}>
               <div className="flex items-center justify-between rounded-t-control px-2 py-1" style={{ backgroundColor: `var(${s.colorVar})` }}>
                 <span className="truncate text-xs font-semibold text-cream">{s.label}</span>
                 {s.bypassed && <span className="font-mono text-[9px] text-cream/80">off</span>}
               </div>
-              <div className="h-44 overflow-hidden rounded-b-control">{renderStageScope(s)}</div>
+              <div className="h-32 overflow-hidden rounded-b-control sm:h-44">{renderStageScope(s)}</div>
             </div>
           ))}
         </div>

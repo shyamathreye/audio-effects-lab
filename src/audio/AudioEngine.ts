@@ -5,7 +5,7 @@ import { createSource } from './sources'
 import type { SourceConfig, SourceInstance } from './sources/types'
 import { ensureBitcrusherModule } from './worklets'
 import { makeSafetyCurve } from './dsp/waveshaper'
-import { dbToGain } from './util'
+import { dbToGain, DEFAULT_MASTER_DB } from './util'
 
 export type StageId = string // 'dry' | effect instance id
 
@@ -35,7 +35,7 @@ export class AudioEngine {
     this.ctx = new AudioContext()
 
     this.master = this.ctx.createGain()
-    this.master.gain.value = dbToGain(0)
+    this.master.gain.value = dbToGain(DEFAULT_MASTER_DB)
 
     // Brick-wall limiter + soft safety clip on the master bus so output can't
     // clip or spike — protects speakers/ears regardless of chain or master gain.

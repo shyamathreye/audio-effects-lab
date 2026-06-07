@@ -49,6 +49,12 @@ export const filter: EffectDef = {
           biquad.gain.value = value as number
         }
       },
+      getFrequencyResponse(freqHz) {
+        const mag = new Float32Array(freqHz.length)
+        const phase = new Float32Array(freqHz.length)
+        biquad.getFrequencyResponse(freqHz, mag, phase)
+        return mag
+      },
       dispose() {
         biquad.disconnect()
       },

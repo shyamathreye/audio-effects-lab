@@ -17,13 +17,13 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   filter: {
     what: 'Passes some frequencies and attenuates others; resonance (Q) peaks the signal right at the cutoff.',
-    watch: 'In the spectrum a wall appears — energy beyond the cutoff drops. In the waveform a low-pass rounds the sharp edges.',
+    watch: "The module's frequency-response curve IS the filter: a low-pass slopes down after the cutoff (dashed marker), a high-pass slopes up, Q makes a resonant peak. In the spectrum, energy beyond the cutoff drops.",
     try: 'Sweep a low-pass on a sawtooth and watch the harmonics vanish right-to-left.',
     ableton: 'Auto Filter',
   },
   eq3: {
     what: 'Boosts or cuts low, mid and high regions independently.',
-    watch: 'The spectrum tilts and bends rather than slicing like a filter.',
+    watch: "The module's frequency-response curve bends up where you boost and down where you cut — a gentle tilt, not the hard wall of a filter.",
     try: 'Cut the mids hard for a thin “telephone” sound and a visible dip in the spectrum.',
     ableton: 'EQ Three / EQ Eight',
   },
@@ -35,7 +35,7 @@ export const EFFECT_GUIDE: Record<string, EffectGuide> = {
   },
   distortion: {
     what: 'Reshapes the wave so brand-new harmonics appear.',
-    watch: 'In the spectrum new spikes multiply upward as Drive rises. In the waveform the curve flattens and kinks.',
+    watch: "The module's in→out transfer curve shows the shaping: the steeper the S vs the dashed unity line, the more it flattens peaks. In the spectrum, new harmonic spikes multiply as Drive rises.",
     try: 'Feed a pure sine and raise Drive — one spike becomes a whole harmonic family.',
     ableton: 'Saturator / Overdrive',
   },

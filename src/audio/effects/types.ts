@@ -30,6 +30,12 @@ export interface EffectInstance {
   setParam(id: string, value: ParamValue): void
   /** Tear down internal nodes / stop oscillators. */
   dispose(): void
+  /** Optional: linear magnitude response at the given frequencies (Hz), for a
+      frequency-response mini-view (filters / EQ). Reflects current params. */
+  getFrequencyResponse?(freqHz: Float32Array<ArrayBuffer>): Float32Array<ArrayBuffer>
+  /** Optional: input→output transfer curve sampled over x ∈ [−1, 1], for a
+      transfer-curve mini-view (waveshaper distortion, compressor knee). */
+  getTransferCurve?(points: number): Float32Array<ArrayBuffer>
 }
 
 export interface EffectDef {

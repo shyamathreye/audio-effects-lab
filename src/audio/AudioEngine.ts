@@ -1,4 +1,4 @@
-import type { EffectDef, ParamValue } from './effects/types'
+import type { EffectDef, EffectInstance, ParamValue } from './effects/types'
 import { createTap, rewireWithCrossfade } from './graph'
 import type { ChainEndpoints, RuntimeEffect, Tap } from './graph'
 import { createSource } from './sources'
@@ -190,6 +190,11 @@ export class AudioEngine {
   setEffectParam(instanceId: string, paramId: string, value: ParamValue): void {
     const fx = this.effects.find((e) => e.id === instanceId)
     fx?.instance.setParam(paramId, value)
+  }
+
+  /** The live EffectInstance, for response/transfer-curve mini-views. */
+  getEffectInstance(instanceId: string): EffectInstance | null {
+    return this.effects.find((e) => e.id === instanceId)?.instance ?? null
   }
 
   // ---- analysers (for visualization) --------------------------------------

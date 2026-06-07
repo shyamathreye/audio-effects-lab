@@ -41,6 +41,8 @@ export const distortion: EffectDef = {
 
     let drive = 8
     let curveType: ShaperCurve = 'tanh'
+    let outLevel = dbToGain(0)
+    let wetAmt = 1
     const refreshCurve = () => {
       shaper.curve = makeShaperCurve(curveType, drive)
     }
@@ -76,12 +78,23 @@ export const distortion: EffectDef = {
             refreshCurve()
             break
           case 'output':
-            level.gain.value = dbToGain(value as number)
+            outLevel = dbToGain(value as number)
+            level.gain.value = outLevel
             break
           case 'wet':
-            setMix(value as number)
+            wetAmt = value as number
+            setMix(wetAmt)
             break
         }
+      },
+      getTransferCurve(points: number) {
+        const shaped = makeShaperCurve(curveType, drive, points)
+        const out = new Float32Array(points)
+        for (let i = 0; i < points; i++) {
+          const x = (i / (points - 1)) * 2 - 1
+          out[i] = wetAmt * outLevel * shaped[i] + (1 - wetAmt) * x
+        }
+        return out
       },
       dispose() {
         input.disconnect()

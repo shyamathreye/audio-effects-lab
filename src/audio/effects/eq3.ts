@@ -57,6 +57,18 @@ export const eq3: EffectDef = {
             break
         }
       },
+      getFrequencyResponse(freqHz) {
+        const n = freqHz.length
+        const out = new Float32Array(n)
+        const m = new Float32Array(n)
+        const p = new Float32Array(n)
+        out.fill(1)
+        for (const band of [low, mid, high]) {
+          band.getFrequencyResponse(freqHz, m, p)
+          for (let i = 0; i < n; i++) out[i] *= m[i]
+        }
+        return out
+      },
       dispose() {
         low.disconnect()
         mid.disconnect()

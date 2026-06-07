@@ -29,6 +29,12 @@ export const compressor: EffectDef = {
     makeup.gain.value = dbToGain(12)
     comp.connect(makeup)
 
+    // mirror params for the transfer-curve view
+    let thr = -24
+    let ratio = 6
+    let knee = 30
+    let makeupDb = 12
+
     return {
       input: comp,
       output: makeup,
@@ -37,9 +43,11 @@ export const compressor: EffectDef = {
         switch (id) {
           case 'threshold':
             comp.threshold.value = v
+            thr = v
             break
           case 'ratio':
             comp.ratio.value = v
+            ratio = v
             break
           case 'attack':
             comp.attack.value = v
@@ -49,11 +57,40 @@ export const compressor: EffectDef = {
             break
           case 'knee':
             comp.knee.value = v
+            knee = v
             break
           case 'makeup':
             makeup.gain.value = dbToGain(v)
+            makeupDb = v
             break
         }
+      },
+      // Static input→output transfer (the classic compressor "knee" plot), as
+      // output amplitude vs input amplitude over x ∈ [−1, 1].
+      getTransferCurve(points: number) {
+        const out = new Float32Array(points)
+        const lo = thr - knee / 2
+        const hi = thr + knee / 2
+        for (let i = 0; i < points; i++) {
+          const x = (i / (points - 1)) * 2 - 1
+          const ax = Math.abs(x)
+          if (ax < 1e-5) {
+            out[i] = 0
+            continue
+          }
+          const inDb = 20 * Math.log10(ax)
+          let gDb: number
+          if (knee > 0.01 && inDb > lo && inDb < hi) {
+            gDb = inDb + (1 / ratio - 1) * ((inDb - lo) * (inDb - lo)) / (2 * knee)
+          } else if (inDb <= lo) {
+            gDb = inDb
+          } else {
+            gDb = thr + (inDb - thr) / ratio
+          }
+          const outAmp = Math.min(1.5, dbToGain(gDb + makeupDb))
+          out[i] = Math.sign(x) * outAmp
+        }
+        return out
       },
       dispose() {
         comp.disconnect()

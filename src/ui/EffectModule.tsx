@@ -6,6 +6,8 @@ import { getEffectDef } from '../audio/effects'
 import type { ParamSpec } from '../audio/effects/types'
 import { ParamControl } from './ParamControl'
 import { Waveform } from '../viz/Waveform'
+import { FrozenCanvas } from '../viz/FrozenCanvas'
+import { drawFrequencyResponse, drawTransferCurve } from '../viz/responseDraw'
 
 function visible(spec: ParamSpec, params: ChainEffect['params']): boolean {
   if (!spec.showWhen) return true
@@ -27,7 +29,45 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
 
   if (!def) return null
   const hue = `var(--${def.colorToken})`
+  const colorVar = `--${def.colorToken}`
   const bodyTone = index % 2 === 0 ? 'bg-coral' : 'bg-coral-alt'
+
+  // Pick the most legible inline view for this effect:
+  //   filter/eq → frequency-response curve · distortion/compressor → transfer
+  //   curve · everything else → live waveform.
+  const viewKind =
+    def.id === 'filter' || def.id === 'eq3'
+      ? 'response'
+      : def.id === 'distortion' || def.id === 'compressor'
+        ? 'transfer'
+        : 'wave'
+  const sr = engine.ctx.sampleRate
+  const paramsKey = JSON.stringify(effect.params)
+  const caption =
+    viewKind === 'response' ? 'frequency response' : viewKind === 'transfer' ? 'in → out' : 'waveform'
+
+  const inlineView =
+    viewKind === 'response' ? (
+      <FrozenCanvas
+        redrawKey={paramsKey}
+        draw={(c, w, h) => {
+          const inst = engine.getEffectInstance(effect.instanceId)
+          if (inst) drawFrequencyResponse(c, w, h, inst, sr, colorVar, def.id === 'filter' ? (effect.params.cutoff as number) : undefined)
+        }}
+        className="h-full w-full"
+      />
+    ) : viewKind === 'transfer' ? (
+      <FrozenCanvas
+        redrawKey={paramsKey}
+        draw={(c, w, h) => {
+          const inst = engine.getEffectInstance(effect.instanceId)
+          if (inst) drawTransferCurve(c, w, h, inst, colorVar)
+        }}
+        className="h-full w-full"
+      />
+    ) : (
+      <Waveform getAnalyser={() => engine.getAnalyser(effect.instanceId)} colorVar={colorVar} active={playing} className="h-full w-full" />
+    )
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -86,14 +126,11 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         </button>
       </div>
 
-      {/* inline mini-scope (this effect's tap, in its hue) */}
-      <div className="mx-3 mt-3 h-14 overflow-hidden rounded-control ring-1 ring-outline">
-        <Waveform
-          getAnalyser={() => engine.getAnalyser(effect.instanceId)}
-          colorVar={`--${def.colorToken}`}
-          active={playing}
-          className="h-full w-full"
-        />
+      {/* inline mini-view: response/transfer curve for tone & dynamics effects,
+          live waveform otherwise */}
+      <div className="mx-3 mt-3 flex flex-col gap-0.5">
+        <div className="h-16 overflow-hidden rounded-control ring-1 ring-outline">{inlineView}</div>
+        <span className="text-center font-mono text-[9px] uppercase tracking-wide text-cream/45">{caption}</span>
       </div>
 
       {/* params */}

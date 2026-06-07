@@ -4,7 +4,8 @@ import type { ChainEndpoints, RuntimeEffect, Tap } from './graph'
 import { createSource } from './sources'
 import type { SourceConfig, SourceInstance } from './sources/types'
 import { ensureBitcrusherModule } from './worklets'
-import { dbToGain } from './util'
+import { makeSafetyCurve } from './dsp/waveshaper'
+import { dbToGain, DEFAULT_MASTER_DB } from './util'
 
 export type StageId = string // 'dry' | effect instance id
 
@@ -16,6 +17,8 @@ export class AudioEngine {
   readonly ctx: AudioContext
 
   private master: GainNode
+  private limiter: DynamicsCompressorNode
+  private safety: WaveShaperNode
   private masterAnalyser: AnalyserNode
   private outputGain: GainNode
   private dryTap: Tap
@@ -32,7 +35,19 @@ export class AudioEngine {
     this.ctx = new AudioContext()
 
     this.master = this.ctx.createGain()
-    this.master.gain.value = dbToGain(0)
+    this.master.gain.value = dbToGain(DEFAULT_MASTER_DB)
+
+    // Brick-wall limiter + soft safety clip on the master bus so output can't
+    // clip or spike — protects speakers/ears regardless of chain or master gain.
+    this.limiter = this.ctx.createDynamicsCompressor()
+    this.limiter.threshold.value = -2
+    this.limiter.knee.value = 0
+    this.limiter.ratio.value = 20
+    this.limiter.attack.value = 0.003
+    this.limiter.release.value = 0.08
+    this.safety = this.ctx.createWaveShaper()
+    this.safety.curve = makeSafetyCurve()
+    this.safety.oversample = 'none' // hard guarantee: output never exceeds the curve cap
 
     this.masterAnalyser = this.ctx.createAnalyser()
     this.masterAnalyser.fftSize = 2048
@@ -43,9 +58,11 @@ export class AudioEngine {
 
     this.dryTap = createTap(this.ctx)
 
-    // outputGain → master → analyser → destination
+    // outputGain → master(user) → limiter → safety → analyser → destination
     this.outputGain.connect(this.master)
-    this.master.connect(this.masterAnalyser)
+    this.master.connect(this.limiter)
+    this.limiter.connect(this.safety)
+    this.safety.connect(this.masterAnalyser)
     this.masterAnalyser.connect(this.ctx.destination)
 
     // preload the bitcrusher worklet so it's ready by the time it's added

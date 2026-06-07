@@ -4,9 +4,11 @@ import { useStore } from '../state/store'
 import type { ChainEffect } from '../state/store'
 import { getEffectDef } from '../audio/effects'
 import type { ParamSpec } from '../audio/effects/types'
+import { PARAM_HELP } from '../guide/content'
 import { ParamControl } from './ParamControl'
 import { Waveform } from '../viz/Waveform'
 import { OverlayWaveform } from '../viz/OverlayWaveform'
+import { Spectrum } from '../viz/Spectrum'
 import { FrozenCanvas } from '../viz/FrozenCanvas'
 import { drawTransferCurve } from '../viz/responseDraw'
 import { ResponseSpectrumView } from '../viz/ResponseSpectrumView'
@@ -39,7 +41,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
   const bodyTone = index % 2 === 0 ? 'bg-coral' : 'bg-coral-alt'
 
   // Each effect gets the inline view that best shows what it does.
-  const viewKind: 'response' | 'inout' | 'comp' | 'transfer' | 'echoes' | 'decay' | 'lfo' | 'wave' =
+  const viewKind: 'response' | 'inout' | 'comp' | 'transfer' | 'echoes' | 'decay' | 'lfo' | 'spectrum' | 'wave' =
     def.id === 'filter' || def.id === 'eq3'
       ? 'response'
       : def.id === 'utility'
@@ -54,7 +56,9 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
                 ? 'decay'
                 : def.id === 'modulation'
                   ? 'lfo'
-                  : 'wave'
+                  : def.id === 'ringmod' || def.id === 'autowah'
+                    ? 'spectrum'
+                    : 'wave'
   const sr = engine.ctx.sampleRate
   const paramsKey = JSON.stringify(effect.params)
   const caption = {
@@ -65,6 +69,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
     echoes: 'echoes',
     decay: 'decay tail',
     lfo: 'LFO',
+    spectrum: 'output spectrum',
     wave: 'waveform',
   }[viewKind]
 
@@ -154,6 +159,17 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         className="h-full w-full"
       />
     )
+  } else if (viewKind === 'spectrum') {
+    inlineView = (
+      <Spectrum
+        stages={[{ id: effect.instanceId, colorVar, label: def.name, bypassed: effect.bypassed }]}
+        getAnalyser={(id) => engine.getAnalyser(id)}
+        sampleRate={sr}
+        fill
+        active={playing}
+        className="h-full w-full"
+      />
+    )
   } else {
     inlineView = <Waveform getAnalyser={() => engine.getAnalyser(effect.instanceId)} colorVar={colorVar} active={playing} className="h-full w-full" />
   }
@@ -170,7 +186,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
       style={style}
       data-node
       data-bypassed={effect.bypassed}
-      className={`relative z-10 flex w-56 shrink-0 flex-col rounded-panel ${bodyTone} shadow-lift ring-2 ring-outline ${
+      className={`relative z-10 flex w-48 shrink-0 flex-col rounded-panel sm:w-56 ${bodyTone} shadow-lift ring-2 ring-outline ${
         effect.bypassed ? 'opacity-60' : ''
       }`}
     >
@@ -184,7 +200,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
           {...listeners}
           className="cursor-grab font-mono text-xs text-cream/80 active:cursor-grabbing"
           aria-label="Drag to reorder"
-          title="Drag to reorder"
+          data-tip="Drag to reorder — effect order changes the sound (e.g. distortion→reverb ≠ reverb→distortion)."
         >
           ⠿
         </button>
@@ -193,14 +209,14 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
           onClick={() => toggleBypass(effect.instanceId)}
           aria-label={effect.bypassed ? 'Enable effect' : 'Bypass effect'}
           aria-pressed={!effect.bypassed}
-          title={effect.bypassed ? 'Bypassed — click to enable' : 'Active — click to bypass'}
+          data-tip={effect.bypassed ? 'Bypassed — click to enable (A/B the effect to hear what it does).' : 'Active — click to bypass and compare against the dry signal.'}
           className="h-3 w-3 rounded-full ring-1 ring-outline transition-colors"
           style={{ backgroundColor: effect.bypassed ? 'var(--grid)' : 'var(--lcd)' }}
         />
         <button
           onClick={() => openInfo(effect.defId)}
           aria-label="What does this effect do?"
-          title="Learn about this effect"
+          data-tip="Open the learning guide for this effect (what it does, what to watch, try this)."
           className="font-mono text-sm text-cream/80 hover:text-cream"
         >
           ⓘ
@@ -208,7 +224,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         <button
           onClick={() => removeEffect(effect.instanceId)}
           aria-label="Remove effect"
-          title="Remove"
+          data-tip="Remove this effect from the chain."
           className="font-mono text-sm text-cream/70 hover:text-cream"
         >
           ✕
@@ -230,6 +246,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
             spec={p}
             value={effect.params[p.id]}
             color={hue}
+            help={PARAM_HELP[`${def.id}.${p.id}`]}
             onChange={(v) => setParam(effect.instanceId, p.id, v)}
           />
         ))}

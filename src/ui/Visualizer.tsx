@@ -25,6 +25,17 @@ const LAYOUTS: { id: VizLayout; label: string }[] = [
   { id: 'individual', label: 'Individual' },
 ]
 
+const VIEW_TIP: Record<ViewKind, string> = {
+  waveform: 'Oscilloscope — amplitude over time. See shape, loudness, echoes, modulation.',
+  spectrum: 'Frequency spectrum — how much energy sits at each pitch (left = bass, right = treble).',
+  spectrogram: 'Spectrum over time — x = time, y = frequency, brightness = energy. Great for delays & reverb tails.',
+  response: 'Combined frequency response of all filters/EQ in the chain, over the live spectrum.',
+}
+const LAYOUT_TIP: Record<VizLayout, string> = {
+  combined: 'Overlay every stage on one screen, colour-coded, to compare them.',
+  individual: 'One scope per stage in a row, mirroring the chain.',
+}
+
 // The big LCD screen (§2A): three views × two layouts × Live/Freeze. Live reads
 // AnalyserNodes each frame; Freeze draws stable curves from an offline render.
 export function Visualizer() {
@@ -136,7 +147,7 @@ export function Visualizer() {
     <section className="flex flex-col gap-2 rounded-panel bg-chassis p-3 ring-2 ring-outline">
       <div className="flex flex-wrap items-center gap-2">
         {VIEWS.map((v) => (
-          <button key={v.id} onClick={() => setView(v.id)} className={tabClass(view === v.id)}>
+          <button key={v.id} onClick={() => setView(v.id)} data-tip={VIEW_TIP[v.id]} className={tabClass(view === v.id)}>
             {v.label}
           </button>
         ))}
@@ -147,6 +158,7 @@ export function Visualizer() {
               <button
                 key={l.id}
                 onClick={() => setVizLayout(l.id)}
+                data-tip={LAYOUT_TIP[l.id]}
                 className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
                   layout === l.id ? 'bg-coral text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
                 }`}
@@ -164,7 +176,7 @@ export function Visualizer() {
               <button
                 key={t.id}
                 onClick={() => setTimebase(t.id)}
-                title={t.id === 'envelope' ? 'Long timebase — see delay repeats & reverb tails' : 'Short window — see the wave shape'}
+                data-tip={t.id === 'envelope' ? 'Long timebase — plots loudness over several seconds: see delay repeats, reverb tails, tremolo.' : 'Short window — see the actual wave shape (use the zoom to widen).'}
                 className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
                   timebase === t.id ? 'bg-coral text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
                 }`}
@@ -177,14 +189,14 @@ export function Visualizer() {
 
         {/* Zoom (Wave timebase only) */}
         {view === 'waveform' && timebase === 'wave' && (
-          <div className="flex items-center overflow-hidden rounded-control ring-1 ring-outline">
-            <button onClick={() => zoomWave(-1)} title="Zoom in (shorter window)" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
+          <div className="flex items-center overflow-hidden rounded-control ring-1 ring-outline" data-tip="Time window shown on the waveform. Zoom out to see echoes/decays; zoom in to inspect the wave shape.">
+            <button onClick={() => zoomWave(-1)} aria-label="Zoom in" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
               −
             </button>
             <span className="px-1 font-mono text-[10px] tabular-nums text-lcd/80">
               {waveSpan < 0.1 ? `${Math.round(waveSpan * 1000)}ms` : `${waveSpan.toFixed(2)}s`}
             </span>
-            <button onClick={() => zoomWave(1)} title="Zoom out (longer window)" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
+            <button onClick={() => zoomWave(1)} aria-label="Zoom out" className="px-2 py-1 font-mono text-xs text-cream/70 hover:bg-outline/60 hover:text-cream">
               +
             </button>
           </div>
@@ -195,6 +207,7 @@ export function Visualizer() {
           <div className="flex overflow-hidden rounded-control ring-1 ring-outline">
             <button
               onClick={goLive}
+              data-tip="Live — read the signal in real time (follows playback, jitters a little)."
               className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
                 live ? 'bg-mint text-chassis' : 'bg-outline/60 text-cream/60 hover:text-cream'
               }`}
@@ -204,7 +217,7 @@ export function Visualizer() {
             <button
               onClick={() => freeze()}
               disabled={freezing}
-              title="Render the chain offline for a stable snapshot"
+              data-tip="Freeze — render the chain offline for a clean, stable snapshot you can study and compare."
               className={`px-3 py-1 font-mono text-xs uppercase tracking-wide transition-colors ${
                 !live ? 'bg-red text-cream' : 'bg-outline/60 text-cream/60 hover:text-cream'
               } ${freezing ? 'opacity-60' : ''}`}
@@ -223,7 +236,7 @@ export function Visualizer() {
 
       {view === 'response' ? (
         <>
-          <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">
+          <div className="h-48 overflow-hidden rounded-control ring-2 ring-outline sm:h-64">
             {responseStages.length > 0 ? (
               <ResponseGraph
                 stages={responseStages}
@@ -256,7 +269,7 @@ export function Visualizer() {
         </>
       ) : layout === 'combined' ? (
         <>
-          <div className="h-64 overflow-hidden rounded-control ring-2 ring-outline">{renderCombined()}</div>
+          <div className="h-48 overflow-hidden rounded-control ring-2 ring-outline sm:h-64">{renderCombined()}</div>
           {view !== 'spectrogram' && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 pt-1">
               {stages.map((s) => (
@@ -271,12 +284,12 @@ export function Visualizer() {
       ) : (
         <div className="flex items-stretch gap-3 overflow-x-auto rounded-control bg-outline/30 p-2 ring-1 ring-outline">
           {stages.map((s) => (
-            <div key={s.id} className={`flex w-56 shrink-0 flex-col rounded-control ring-1 ring-outline ${s.bypassed ? 'opacity-50' : ''}`}>
+            <div key={s.id} className={`flex w-44 shrink-0 flex-col rounded-control ring-1 ring-outline sm:w-56 ${s.bypassed ? 'opacity-50' : ''}`}>
               <div className="flex items-center justify-between rounded-t-control px-2 py-1" style={{ backgroundColor: `var(${s.colorVar})` }}>
                 <span className="truncate text-xs font-semibold text-cream">{s.label}</span>
                 {s.bypassed && <span className="font-mono text-[9px] text-cream/80">off</span>}
               </div>
-              <div className="h-44 overflow-hidden rounded-b-control">{renderStageScope(s)}</div>
+              <div className="h-32 overflow-hidden rounded-b-control sm:h-44">{renderStageScope(s)}</div>
             </div>
           ))}
         </div>

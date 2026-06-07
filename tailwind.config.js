@@ -28,6 +28,8 @@ export default {
         'stage-reverb': 'var(--stage-reverb)',
         'stage-modulation': 'var(--stage-modulation)',
         'stage-bitcrusher': 'var(--stage-bitcrusher)',
+        'stage-ringmod': 'var(--stage-ringmod)',
+        'stage-autowah': 'var(--stage-autowah)',
       },
       borderRadius: {
         panel: '20px',

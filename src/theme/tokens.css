@@ -27,6 +27,8 @@
   --stage-reverb: #2c5e61;
   --stage-modulation: #e0606f;
   --stage-bitcrusher: #e8b04b;
+  --stage-ringmod: #9b7ede;
+  --stage-autowah: #e0824a;
 
   /* LCD screen surface */
   --lcd-bg: #0c120d;

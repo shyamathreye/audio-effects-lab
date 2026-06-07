@@ -38,6 +38,7 @@ export function Transport() {
           playing ? 'bg-red' : 'bg-mint'
         }`}
         aria-label={playing ? 'Stop' : 'Play'}
+        data-tip={playing ? 'Stop playback' : 'Start playback (browsers need a click before any sound can play)'}
       >
         {playing ? '■' : '▶'}
       </button>
@@ -53,7 +54,7 @@ export function Transport() {
         onChange={setMasterDb}
       />
 
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1" data-tip="Clip indicator: lights if the output peaks too hot. The master limiter prevents actual clipping/speaker damage, but it's a cue to pull levels down.">
         <span
           className="h-3 w-3 rounded-full ring-1 ring-outline"
           style={{ backgroundColor: clip ? 'var(--red)' : 'var(--grid)' }}

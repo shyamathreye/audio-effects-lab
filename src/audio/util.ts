@@ -1,5 +1,9 @@
 // Shared audio math helpers.
 
+// Default master level. Sources are conservative and the master bus has a
+// limiter + safety clip, so we can run a healthy hot default without clipping.
+export const DEFAULT_MASTER_DB = 6
+
 /** Decibels → linear gain. -Infinity dB → 0. */
 export function dbToGain(db: number): number {
   if (db <= -100) return 0

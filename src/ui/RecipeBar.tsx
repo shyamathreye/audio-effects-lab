@@ -17,7 +17,7 @@ export function RecipeBar() {
           <button
             key={r.id}
             onClick={() => loadRecipe(r.id)}
-            title={r.blurb}
+            data-tip={`${r.blurb} — loads the source + effect chain and shows what to listen for.`}
             className={`flex items-center gap-1.5 rounded-control px-3 py-1 text-sm font-medium ring-1 transition-colors ${
               recipeId === r.id
                 ? 'bg-teal text-cream ring-outline'
@@ -31,19 +31,23 @@ export function RecipeBar() {
       </div>
 
       {note && (
-        <div className="flex items-start gap-2 rounded-control bg-lcd/10 px-3 py-2 ring-1 ring-lcd/30">
-          <span className="mt-0.5 text-lcd" aria-hidden>
-            👁
-          </span>
-          <p className="flex-1 text-sm text-cream/85">
-            <span className="font-semibold text-lcd">{note.name} — what to watch: </span>
-            {note.observe}
-          </p>
-          <button
-            onClick={dismiss}
-            aria-label="Dismiss tip"
-            className="font-mono text-sm text-cream/50 hover:text-cream"
-          >
+        <div className="flex items-start gap-3 rounded-control bg-lcd/10 px-3 py-2 ring-1 ring-lcd/30">
+          <div className="flex-1 space-y-1 text-sm text-cream/85">
+            <div className="font-semibold text-lcd">{note.name}</div>
+            <p>
+              <span className="font-mono text-[11px] uppercase tracking-wide text-teal">🔊 listen · </span>
+              {note.listen}
+            </p>
+            <p>
+              <span className="font-mono text-[11px] uppercase tracking-wide text-teal">👁 watch · </span>
+              {note.watch}
+            </p>
+            <p>
+              <span className="font-mono text-[11px] uppercase tracking-wide text-teal">🎛 tweak · </span>
+              {note.tweak}
+            </p>
+          </div>
+          <button onClick={dismiss} aria-label="Dismiss tip" className="font-mono text-sm text-cream/50 hover:text-cream">
             ✕
           </button>
         </div>

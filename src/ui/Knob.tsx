@@ -11,6 +11,8 @@ interface KnobProps {
   scale?: 'linear' | 'log'
   /** Knob fill color (CSS value). Defaults to teal. */
   color?: string
+  /** Hover help shown in the tooltip alongside the value. */
+  help?: string
   onChange: (v: number) => void
 }
 
@@ -28,6 +30,7 @@ export function Knob({
   unit,
   scale = 'linear',
   color = 'var(--teal)',
+  help,
   onChange,
 }: KnobProps) {
   const dragRef = useRef<{ y: number; unit: number } | null>(null)
@@ -78,7 +81,10 @@ export function Knob({
     Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2)
 
   return (
-    <div className="flex flex-col items-center gap-1 select-none" title={`${label}: ${display}${unit ?? ''}`}>
+    <div
+      className="flex flex-col items-center gap-1 select-none"
+      data-tip={`${label}${help ? ` — ${help}` : ''}  ·  drag vertically (Shift = fine, double-click = reset)`}
+    >
       <svg
         width="44"
         height="44"

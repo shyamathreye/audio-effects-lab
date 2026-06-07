@@ -17,6 +17,20 @@
     font-family: theme('fontFamily.sans');
     -webkit-font-smoothing: antialiased;
   }
+  @keyframes tip-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .tip-in {
+    animation: tip-in 90ms ease-out;
+  }
+
   /* Honor reduced-motion globally (§2A accessibility). */
   @media (prefers-reduced-motion: reduce) {
     *,

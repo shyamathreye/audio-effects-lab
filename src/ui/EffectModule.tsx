@@ -81,6 +81,15 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         sampleRate={sr}
         colorVar={colorVar}
         cutoffHz={def.id === 'filter' ? (p.cutoff as number) : undefined}
+        markers={
+          def.id === 'eq3'
+            ? [
+                { freq: 150, label: 'Low' },
+                { freq: p.midFreq as number, label: 'Mid' },
+                { freq: 4000, label: 'High' },
+              ]
+            : undefined
+        }
         active={playing}
         redrawKey={paramsKey}
         className="h-full w-full"

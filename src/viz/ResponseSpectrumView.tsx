@@ -11,6 +11,8 @@ interface Props {
   colorVar: string
   /** Optional cutoff marker (Hz). */
   cutoffHz?: number
+  /** Optional band markers drawn as labelled dots sitting on the curve. */
+  markers?: { freq: number; label: string }[]
   /** Live while playing; otherwise a static frame is kept. */
   active?: boolean
   /** Bump to redraw the curve when params change while paused. */
@@ -33,6 +35,7 @@ export function ResponseSpectrumView({
   sampleRate,
   colorVar,
   cutoffHz,
+  markers,
   active = true,
   redrawKey,
   className,
@@ -41,6 +44,8 @@ export function ResponseSpectrumView({
   const specRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(1024))
   const freqRef = useRef<Float32Array<ArrayBuffer>>(new Float32Array(192))
   const drawRef = useRef<() => void>(() => {})
+  const markersRef = useRef(markers)
+  markersRef.current = markers
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current
@@ -146,6 +151,40 @@ export function ResponseSpectrumView({
       ctx.lineWidth = Math.max(1.5, w / 220)
       ctx.strokeStyle = cssVar(colorVar)
       ctx.stroke()
+
+      // band markers — labelled dots sitting on the curve at each band's freq
+      const mk = markersRef.current
+      if (mk) {
+        const r = Math.max(3, w / 110)
+        ctx.font = `${Math.round(h * 0.13)}px ui-monospace, monospace`
+        ctx.textAlign = 'center'
+        for (const m of mk) {
+          if (m.freq < FREQ_MIN || m.freq > maxF) continue
+          let idx = 0
+          let best = Infinity
+          for (let i = 0; i < N; i++) {
+            const dd = Math.abs(freqs[i] - m.freq)
+            if (dd < best) {
+              best = dd
+              idx = i
+            }
+          }
+          const db = 20 * Math.log10(Math.max(1e-4, mag[idx]))
+          const mx = freqToX(m.freq, w, maxF)
+          const my = clampY(dbToY(db, h, RESP_MIN_DB, RESP_MAX_DB), h)
+          ctx.beginPath()
+          ctx.arc(mx, my, r, 0, Math.PI * 2)
+          ctx.fillStyle = cssVar('--panel-cream')
+          ctx.fill()
+          ctx.lineWidth = 1.5
+          ctx.strokeStyle = cssVar('--outline')
+          ctx.stroke()
+          ctx.fillStyle = cssVar('--panel-cream')
+          const ly = my < h * 0.4 ? my + r + Math.round(h * 0.16) : my - r - Math.round(h * 0.05)
+          ctx.fillText(m.label, Math.max(8, Math.min(w - 8, mx)), ly)
+        }
+        ctx.textAlign = 'start'
+      }
     }
   }, [response, getInputAnalyser, sampleRate, colorVar, cutoffHz])
 

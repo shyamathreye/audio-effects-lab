@@ -83,7 +83,7 @@ export function Knob({
   return (
     <div
       className="flex flex-col items-center gap-1 select-none"
-      title={`${label}: ${display}${unit ?? ''}${help ? `\n${help}` : ''}\n(drag vertically; Shift = fine; double-click = reset)`}
+      data-tip={`${label}${help ? ` — ${help}` : ''}  ·  drag vertically (Shift = fine, double-click = reset)`}
     >
       <svg
         width="44"

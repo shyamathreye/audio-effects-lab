@@ -96,7 +96,7 @@ export const useStore = create<AppState>((set, get) => ({
   view: 'waveform',
   vizLayout: 'combined',
   timebase: 'wave',
-  waveSpan: 0.03,
+  waveSpan: 0.15,
   vizMode: 'live',
   frozen: null,
   freezeId: 0,

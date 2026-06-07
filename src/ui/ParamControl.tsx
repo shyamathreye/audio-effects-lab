@@ -17,7 +17,7 @@ export function ParamControl({ spec, value, color, help, onChange }: ParamContro
 
   if (spec.type === 'enum') {
     return (
-      <label className="flex flex-col items-center gap-1" title={tip}>
+      <label className="flex flex-col items-center gap-1" data-tip={tip}>
         <select
           value={String(value)}
           onChange={(e) => onChange(e.target.value)}
@@ -41,7 +41,7 @@ export function ParamControl({ spec, value, color, help, onChange }: ParamContro
         type="button"
         onClick={() => onChange(!on)}
         aria-pressed={on}
-        title={tip}
+        data-tip={tip}
         className="flex flex-col items-center gap-1"
       >
         <span

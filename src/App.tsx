@@ -4,6 +4,7 @@ import { Visualizer } from './ui/Visualizer'
 import { Chain } from './ui/Chain'
 import { InfoDrawer } from './ui/InfoDrawer'
 import { RecipeBar } from './ui/RecipeBar'
+import { TooltipLayer } from './ui/TooltipLayer'
 import { useStore } from './state/store'
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
       <Visualizer />
       <Chain />
       <InfoDrawer />
+      <TooltipLayer />
     </div>
   )
 }

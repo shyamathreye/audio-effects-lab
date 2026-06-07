@@ -23,7 +23,7 @@ export interface NoiseConfig {
   level: number
 }
 
-export type LoopName = 'drum' | 'pad' | 'melodic'
+export type LoopName = 'drum' | 'breakbeat' | 'bass' | 'pad' | 'chords' | 'melodic' | 'arp'
 
 export interface LoopConfig {
   kind: 'loop'

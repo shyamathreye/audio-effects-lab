@@ -5,6 +5,8 @@ import { defaultParams } from '../audio/effects/types'
 import type { ParamValue } from '../audio/effects/types'
 import { DEFAULT_OSC } from '../audio/sources/types'
 import type { OscConfig } from '../audio/sources/types'
+import { renderStages } from '../audio/offline'
+import type { FrozenData } from '../audio/offline'
 
 export interface ChainEffect {
   instanceId: string
@@ -15,6 +17,7 @@ export interface ChainEffect {
 
 export type ViewKind = 'waveform' | 'spectrum' | 'spectrogram'
 export type VizLayout = 'combined' | 'individual'
+export type VizMode = 'live' | 'freeze'
 
 let instanceCounter = 0
 const nextId = (defId: string) => `${defId}-${++instanceCounter}`
@@ -32,6 +35,11 @@ interface AppState {
   chain: ChainEffect[]
   view: ViewKind
   vizLayout: VizLayout
+  vizMode: VizMode
+  frozen: FrozenData | null
+  /** bumped each freeze so frozen canvases redraw */
+  freezeId: number
+  freezing: boolean
 
   play: () => Promise<void>
   stop: () => void
@@ -46,6 +54,8 @@ interface AppState {
 
   setView: (view: ViewKind) => void
   setVizLayout: (layout: VizLayout) => void
+  freeze: () => Promise<void>
+  goLive: () => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -56,6 +66,10 @@ export const useStore = create<AppState>((set, get) => ({
   chain: [],
   view: 'waveform',
   vizLayout: 'combined',
+  vizMode: 'live',
+  frozen: null,
+  freezeId: 0,
+  freezing: false,
 
   async play() {
     await engine.play()
@@ -130,6 +144,19 @@ export const useStore = create<AppState>((set, get) => ({
   },
   setVizLayout(layout) {
     set({ vizLayout: layout })
+  },
+  async freeze() {
+    const { source, chain } = get()
+    set({ freezing: true })
+    try {
+      const frozen = await renderStages(source, chain)
+      set((s) => ({ frozen, vizMode: 'freeze', freezeId: s.freezeId + 1, freezing: false }))
+    } catch {
+      set({ freezing: false })
+    }
+  },
+  goLive() {
+    set({ vizMode: 'live' })
   },
 }))
 

@@ -29,3 +29,20 @@ export function cssVar(name: string): string {
   if (typeof window === 'undefined') return '#fff'
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
+
+export const FREQ_MIN = 20
+export const FREQ_MAX = 20000
+
+/** Map a frequency (Hz) to an x position (0..width) on a log axis. */
+export function freqToX(freq: number, width: number, max = FREQ_MAX): number {
+  const f = Math.max(FREQ_MIN, Math.min(max, freq))
+  const lmin = Math.log10(FREQ_MIN)
+  const lmax = Math.log10(max)
+  return ((Math.log10(f) - lmin) / (lmax - lmin)) * width
+}
+
+/** Map a dB magnitude to a y position (0=top..height=bottom). */
+export function dbToY(db: number, height: number, minDb = -100, maxDb = -10): number {
+  const c = Math.max(minDb, Math.min(maxDb, db))
+  return (1 - (c - minDb) / (maxDb - minDb)) * height
+}

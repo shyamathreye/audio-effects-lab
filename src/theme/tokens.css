@@ -1,0 +1,33 @@
+/* §2A Visual Design System — color tokens sampled from the reference illustration.
+   These are the single source of truth; tailwind.config.js maps utilities to them.
+   No component should hardcode hex values (PRD §4.8). */
+:root {
+  /* §2A.1 base palette */
+  --chassis: #2d2d32;
+  --outline: #18171a;
+  --panel-cream: #fbead0;
+  --panel-coral: #de7561;
+  --panel-coral-alt: #c9624f;
+  --teal: #39767a;
+  --mint: #67b899;
+  --red: #d8504a;
+  --lcd: #87be93;
+  --grid: #3a3a42;
+
+  /* §2A.2 stage color mapping — consistent across chain UI, scopes, overlay.
+     --stage-dry-on-black is the lighter variant used on the black LCD. */
+  --stage-dry: #3a3a42;
+  --stage-dry-on-black: #9aa0ad;
+  --stage-utility: #64748b;
+  --stage-filter: #39767a;
+  --stage-eq: #87be93;
+  --stage-compressor: #67b899;
+  --stage-distortion: #de7561;
+  --stage-delay: #d8504a;
+  --stage-reverb: #2c5e61;
+  --stage-modulation: #e0606f;
+
+  /* LCD screen surface */
+  --lcd-bg: #0c120d;
+  --lcd-grid: #1d3322;
+}

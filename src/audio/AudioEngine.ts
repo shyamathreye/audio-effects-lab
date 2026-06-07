@@ -1,0 +1,184 @@
+import type { EffectDef, ParamValue } from './effects/types'
+import { createTap, rewireWithCrossfade } from './graph'
+import type { ChainEndpoints, RuntimeEffect, Tap } from './graph'
+import { createOscillator } from './sources/oscillator'
+import type { OscConfig, SourceInstance } from './sources/types'
+import { dbToGain } from './util'
+
+export type StageId = string // 'dry' | effect instance id
+
+// AudioEngine owns the live audio graph (PRD §4.3): one AudioContext, a master
+// bus with clip detection, a persistent dry tap, and an ordered list of runtime
+// effects each with their own output tap. The Zustand store holds declarative
+// state and drives this engine imperatively.
+export class AudioEngine {
+  readonly ctx: AudioContext
+
+  private master: GainNode
+  private masterAnalyser: AnalyserNode
+  private outputGain: GainNode
+  private dryTap: Tap
+
+  private source: SourceInstance | null = null
+  private sourceConfig: OscConfig | null = null
+  private effects: RuntimeEffect[] = []
+
+  private _playing = false
+  private clipBuf: Float32Array<ArrayBuffer>
+
+  constructor() {
+    this.ctx = new AudioContext()
+
+    this.master = this.ctx.createGain()
+    this.master.gain.value = dbToGain(0)
+
+    this.masterAnalyser = this.ctx.createAnalyser()
+    this.masterAnalyser.fftSize = 2048
+    this.clipBuf = new Float32Array(this.masterAnalyser.fftSize)
+
+    this.outputGain = this.ctx.createGain()
+    this.outputGain.gain.value = 1
+
+    this.dryTap = createTap(this.ctx)
+
+    // outputGain → master → analyser → destination
+    this.outputGain.connect(this.master)
+    this.master.connect(this.masterAnalyser)
+    this.masterAnalyser.connect(this.ctx.destination)
+
+    this.rewire()
+  }
+
+  private endpoints(): ChainEndpoints {
+    return {
+      sourceOut: this.source?.output ?? null,
+      dryTap: this.dryTap,
+      effects: this.effects,
+      outputGain: this.outputGain,
+    }
+  }
+
+  private rewire(): void {
+    rewireWithCrossfade(this.ctx, this.endpoints())
+  }
+
+  async resume(): Promise<void> {
+    if (this.ctx.state === 'suspended') await this.ctx.resume()
+  }
+
+  get playing(): boolean {
+    return this._playing
+  }
+
+  // ---- transport -----------------------------------------------------------
+
+  setSourceConfig(cfg: OscConfig): void {
+    this.sourceConfig = cfg
+    if (this._playing) {
+      // Rebuild the source live so changes are audible immediately.
+      this.rebuildSource()
+    }
+  }
+
+  private rebuildSource(): void {
+    this.source?.stop()
+    this.source?.dispose()
+    this.source = null
+    if (this.sourceConfig) {
+      this.source = createOscillator(this.ctx, this.sourceConfig)
+      this.rewire()
+      this.source.start(this.ctx.currentTime + 0.02)
+    }
+  }
+
+  async play(): Promise<void> {
+    await this.resume()
+    if (this._playing) return
+    this._playing = true
+    this.rebuildSource()
+  }
+
+  stop(): void {
+    if (!this._playing) return
+    this._playing = false
+    this.source?.stop()
+    const src = this.source
+    this.source = null
+    // Let the release tail finish, then drop it from the graph.
+    window.setTimeout(() => {
+      src?.dispose()
+      this.rewire()
+    }, 400)
+  }
+
+  setMasterGainDb(db: number): void {
+    const t = this.ctx.currentTime
+    this.master.gain.cancelScheduledValues(t)
+    this.master.gain.setTargetAtTime(dbToGain(db), t, 0.01)
+  }
+
+  /** Peak sample magnitude on the master bus; > 1 indicates clipping. */
+  readMasterPeak(): number {
+    this.masterAnalyser.getFloatTimeDomainData(this.clipBuf)
+    let peak = 0
+    for (let i = 0; i < this.clipBuf.length; i++) {
+      const a = Math.abs(this.clipBuf[i])
+      if (a > peak) peak = a
+    }
+    return peak
+  }
+
+  // ---- chain ---------------------------------------------------------------
+
+  addEffect(instanceId: string, def: EffectDef, bypassed = false): void {
+    const instance = def.build(this.ctx)
+    const tap = createTap(this.ctx)
+    this.effects.push({ id: instanceId, instance, tap, bypassed })
+    this.rewire()
+  }
+
+  removeEffect(instanceId: string): void {
+    const idx = this.effects.findIndex((e) => e.id === instanceId)
+    if (idx === -1) return
+    const [fx] = this.effects.splice(idx, 1)
+    this.rewire()
+    // Dispose after the rewire's mute window so we never tear down a live node.
+    window.setTimeout(() => {
+      fx.instance.dispose()
+      fx.tap.node.disconnect()
+      fx.tap.analyser.disconnect()
+    }, 40)
+  }
+
+  reorderEffects(orderedIds: string[]): void {
+    const byId = new Map(this.effects.map((e) => [e.id, e]))
+    const next: RuntimeEffect[] = []
+    for (const id of orderedIds) {
+      const fx = byId.get(id)
+      if (fx) next.push(fx)
+    }
+    if (next.length !== this.effects.length) return
+    this.effects = next
+    this.rewire()
+  }
+
+  setBypass(instanceId: string, bypassed: boolean): void {
+    const fx = this.effects.find((e) => e.id === instanceId)
+    if (!fx || fx.bypassed === bypassed) return
+    fx.bypassed = bypassed
+    this.rewire()
+  }
+
+  setEffectParam(instanceId: string, paramId: string, value: ParamValue): void {
+    const fx = this.effects.find((e) => e.id === instanceId)
+    fx?.instance.setParam(paramId, value)
+  }
+
+  // ---- analysers (for visualization) --------------------------------------
+
+  getAnalyser(stage: StageId): AnalyserNode | null {
+    if (stage === 'dry') return this.dryTap.analyser
+    if (stage === 'master') return this.masterAnalyser
+    return this.effects.find((e) => e.id === stage)?.tap.analyser ?? null
+  }
+}

@@ -17,7 +17,7 @@ export function RecipeBar() {
           <button
             key={r.id}
             onClick={() => loadRecipe(r.id)}
-            title={r.blurb}
+            data-tip={`${r.blurb} — loads the source + effect chain and shows what to listen for.`}
             className={`flex items-center gap-1.5 rounded-control px-3 py-1 text-sm font-medium ring-1 transition-colors ${
               recipeId === r.id
                 ? 'bg-teal text-cream ring-outline'

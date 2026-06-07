@@ -200,7 +200,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
           {...listeners}
           className="cursor-grab font-mono text-xs text-cream/80 active:cursor-grabbing"
           aria-label="Drag to reorder"
-          title="Drag to reorder"
+          data-tip="Drag to reorder — effect order changes the sound (e.g. distortion→reverb ≠ reverb→distortion)."
         >
           ⠿
         </button>
@@ -209,14 +209,14 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
           onClick={() => toggleBypass(effect.instanceId)}
           aria-label={effect.bypassed ? 'Enable effect' : 'Bypass effect'}
           aria-pressed={!effect.bypassed}
-          title={effect.bypassed ? 'Bypassed — click to enable' : 'Active — click to bypass'}
+          data-tip={effect.bypassed ? 'Bypassed — click to enable (A/B the effect to hear what it does).' : 'Active — click to bypass and compare against the dry signal.'}
           className="h-3 w-3 rounded-full ring-1 ring-outline transition-colors"
           style={{ backgroundColor: effect.bypassed ? 'var(--grid)' : 'var(--lcd)' }}
         />
         <button
           onClick={() => openInfo(effect.defId)}
           aria-label="What does this effect do?"
-          title="Learn about this effect"
+          data-tip="Open the learning guide for this effect (what it does, what to watch, try this)."
           className="font-mono text-sm text-cream/80 hover:text-cream"
         >
           ⓘ
@@ -224,7 +224,7 @@ export function EffectModule({ effect, index }: { effect: ChainEffect; index: nu
         <button
           onClick={() => removeEffect(effect.instanceId)}
           aria-label="Remove effect"
-          title="Remove"
+          data-tip="Remove this effect from the chain."
           className="font-mono text-sm text-cream/70 hover:text-cream"
         >
           ✕

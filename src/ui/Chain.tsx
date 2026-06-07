@@ -46,6 +46,7 @@ export function Chain() {
           <button
             key={def.id}
             onClick={() => addEffect(def.id)}
+            data-tip={`Add ${def.name} (≈ ${def.ableton}) to the end of the chain.`}
             className="rounded-control px-3 py-1 text-sm font-medium text-cream ring-2 ring-outline transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: `var(--${def.colorToken})` }}
           >

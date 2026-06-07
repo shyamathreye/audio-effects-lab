@@ -50,7 +50,7 @@ export function TooltipLayer() {
       ref={boxRef}
       role="tooltip"
       style={style}
-      className="rounded-control bg-outline px-3 py-2 text-xs leading-snug text-cream shadow-lift ring-1 ring-grid"
+      className="tip-in rounded-control bg-outline px-3 py-2 text-xs leading-snug text-cream shadow-lift ring-1 ring-grid"
     >
       {tip.text}
     </div>

@@ -25,14 +25,16 @@ const LOOPS: { value: LoopName; label: string }[] = [
 function Pills<T extends string>({
   options,
   value,
+  tip,
   onChange,
 }: {
   options: { value: T; label: string }[]
   value: T
+  tip?: string
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex overflow-hidden rounded-control ring-2 ring-outline">
+    <div className="flex overflow-hidden rounded-control ring-2 ring-outline" data-tip={tip}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -61,31 +63,47 @@ export function SourceBar() {
     <section className="flex flex-wrap items-center gap-4 rounded-panel bg-cream px-4 py-3 text-chassis ring-2 ring-outline">
       <span className="font-mono text-xs font-semibold uppercase tracking-widest">Source</span>
 
-      <Pills options={KINDS} value={source.kind} onChange={setSourceKind} />
+      <Pills
+        options={KINDS}
+        value={source.kind}
+        tip="The sound you feed the chain: Osc (a raw waveform), Noise, a built-in Loop, or your own audio File."
+        onChange={setSourceKind}
+      />
 
       {/* divider */}
       <span className="h-8 w-px bg-chassis/20" />
 
       {source.kind === 'oscillator' && (
         <>
-          <Pills options={WAVES} value={source.wave} onChange={(v) => setSource({ wave: v })} />
-          <Knob label="Pitch" value={source.freq} min={40} max={4000} scale="log" unit="Hz" color="var(--teal)" onChange={(v) => setSource({ freq: v })} />
-          <Pills options={[{ value: 'drone', label: 'Drone' }, { value: 'pluck', label: 'Pluck' }] as const} value={source.mode} onChange={(v) => setSource({ mode: v })} />
+          <Pills options={WAVES} value={source.wave} tip="Oscillator shape. Sine = pure tone; Saw/Square = bright & harmonic-rich; Triangle = mellow." onChange={(v) => setSource({ wave: v })} />
+          <Knob label="Pitch" value={source.freq} min={40} max={4000} scale="log" unit="Hz" help="Pitch of the oscillator." color="var(--teal)" onChange={(v) => setSource({ freq: v })} />
+          <Pills
+            options={[{ value: 'drone', label: 'Drone' }, { value: 'pluck', label: 'Pluck' }] as const}
+            value={source.mode}
+            tip="Drone holds a steady note; Pluck retriggers a note with a decay (great for hearing delay/reverb tails)."
+            onChange={(v) => setSource({ mode: v })}
+          />
         </>
       )}
 
       {source.kind === 'noise' && (
-        <Pills options={[{ value: 'white', label: 'White' }, { value: 'pink', label: 'Pink' }] as const} value={source.color} onChange={(v) => setSource({ color: v })} />
+        <Pills
+          options={[{ value: 'white', label: 'White' }, { value: 'pink', label: 'Pink' }] as const}
+          value={source.color}
+          tip="White = equal energy per frequency (bright, hissy). Pink = −3 dB/octave (warmer, more natural)."
+          onChange={(v) => setSource({ color: v })}
+        />
       )}
 
       {source.kind === 'loop' && (
-        <Pills options={LOOPS} value={source.name} onChange={(v) => setSource({ name: v })} />
+        <Pills options={LOOPS} value={source.name} tip="A short looping phrase: a Drum beat, a sustained Pad chord, or a Melody line." onChange={(v) => setSource({ name: v })} />
       )}
 
       {source.kind === 'file' && (
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInput.current?.click()}
+            data-tip="Load your own audio file (WAV/MP3/OGG). It loops through the chain."
             className="rounded-control bg-teal px-3 py-1 text-sm font-medium text-cream ring-1 ring-outline hover:brightness-110"
           >
             Choose file…

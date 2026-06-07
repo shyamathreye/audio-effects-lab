@@ -35,41 +35,39 @@ const LOOPS: { value: LoopName; label: string }[] = [
   { value: 'arp', label: 'Arp — Am arpeggio' },
 ]
 
-// Pick the oscillator pitch by musical note + octave instead of raw Hz.
+// Pick the oscillator pitch by musical note + octave instead of raw Hz. Rendered
+// as a single pill-height row so it aligns with the other source controls.
 function NotePicker({ freq, onChange }: { freq: number; onChange: (f: number) => void }) {
   const midi = freqToMidi(freq)
   const noteIdx = midiNoteIndex(midi)
   const octave = midiOctave(midi)
   const setMidi = (m: number) => onChange(clamp(midiToFreq(m), 20, 12000))
   return (
-    <div className="flex items-center gap-2" data-tip="Pitch as a musical note + octave. Pick a note; use − / + to change octave.">
-      <div className="flex flex-col items-center gap-1">
-        <select
-          value={noteIdx}
-          onChange={(e) => setMidi(noteToMidi(Number(e.target.value), octave))}
-          className="rounded-control bg-chassis/10 px-2 py-1 font-mono text-sm text-chassis outline-none ring-2 ring-outline"
-        >
-          {NOTE_NAMES.map((n, i) => (
-            <option key={n} value={i}>
-              {n}
-            </option>
-          ))}
-        </select>
-        <span className="text-[10px] uppercase tracking-wide text-chassis/60">Note</span>
+    <div
+      className="flex items-center gap-2"
+      data-tip="Pitch as a musical note + octave. Pick a note; use − / + to change octave."
+    >
+      <select
+        value={noteIdx}
+        onChange={(e) => setMidi(noteToMidi(Number(e.target.value), octave))}
+        aria-label="Note"
+        className="rounded-control bg-cream px-3 py-1 text-sm font-medium text-chassis outline-none ring-2 ring-outline"
+      >
+        {NOTE_NAMES.map((n, i) => (
+          <option key={n} value={i}>
+            {n}
+          </option>
+        ))}
+      </select>
+      <div className="flex items-stretch overflow-hidden rounded-control ring-2 ring-outline">
+        <button onClick={() => setMidi(midi - 12)} aria-label="Octave down" className="bg-cream px-3 py-1 text-sm font-medium text-chassis hover:bg-chassis/10">
+          −
+        </button>
+        <span className="flex items-center bg-cream px-3 font-mono text-sm tabular-nums text-chassis">{midiLabel(midi)}</span>
+        <button onClick={() => setMidi(midi + 12)} aria-label="Octave up" className="bg-cream px-3 py-1 text-sm font-medium text-chassis hover:bg-chassis/10">
+          +
+        </button>
       </div>
-      <div className="flex flex-col items-center gap-1">
-        <div className="flex items-center overflow-hidden rounded-control ring-2 ring-outline">
-          <button onClick={() => setMidi(midi - 12)} aria-label="Octave down" className="bg-cream px-2 py-1 text-sm text-chassis hover:bg-chassis/10">
-            −
-          </button>
-          <span className="bg-cream px-2 py-1 font-mono text-sm text-chassis">{octave}</span>
-          <button onClick={() => setMidi(midi + 12)} aria-label="Octave up" className="bg-cream px-2 py-1 text-sm text-chassis hover:bg-chassis/10">
-            +
-          </button>
-        </div>
-        <span className="text-[10px] uppercase tracking-wide text-chassis/60">Octave</span>
-      </div>
-      <span className="font-mono text-xs text-teal">{midiLabel(midi)}</span>
     </div>
   )
 }
@@ -149,20 +147,19 @@ export function SourceBar() {
       )}
 
       {source.kind === 'loop' && (
-        <div className="flex flex-col items-start gap-1" data-tip="Pick a built-in loop: drums, breakbeat, bass, chords, pad, melody or arpeggio (all in A minor so they layer musically).">
-          <select
-            value={source.name}
-            onChange={(e) => setSource({ name: e.target.value as LoopName })}
-            className="rounded-control bg-chassis/10 px-2 py-1 font-mono text-sm text-chassis outline-none ring-2 ring-outline"
-          >
-            {LOOPS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-          <span className="text-[10px] uppercase tracking-wide text-chassis/60">Sample</span>
-        </div>
+        <select
+          value={source.name}
+          onChange={(e) => setSource({ name: e.target.value as LoopName })}
+          aria-label="Sample"
+          data-tip="Pick a built-in loop: drums, breakbeat, bass, chords, pad, melody or arpeggio (all in A minor so they layer musically)."
+          className="rounded-control bg-cream px-3 py-1 text-sm font-medium text-chassis outline-none ring-2 ring-outline"
+        >
+          {LOOPS.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       )}
 
       {source.kind === 'file' && (

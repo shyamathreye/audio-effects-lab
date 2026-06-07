@@ -128,5 +128,10 @@ export const useStore = create<AppState>((set, get) => ({
 
 // Dev-only handle for debugging / automated verification in the browser console.
 if (import.meta.env.DEV) {
-  ;(window as unknown as { __vize?: unknown }).__vize = { useStore, engine }
+  ;(window as unknown as { __vize?: unknown }).__vize = {
+    useStore,
+    engine,
+    runEffectFixtures: () =>
+      import('../fixtures/effectFixtures').then((m) => m.runEffectFixtures()),
+  }
 }

@@ -14,6 +14,7 @@ export interface ChainEffect {
 }
 
 export type ViewKind = 'waveform' | 'spectrum' | 'spectrogram'
+export type VizLayout = 'combined' | 'individual'
 
 let instanceCounter = 0
 const nextId = (defId: string) => `${defId}-${++instanceCounter}`
@@ -30,6 +31,7 @@ interface AppState {
   masterDb: number
   chain: ChainEffect[]
   view: ViewKind
+  vizLayout: VizLayout
 
   play: () => Promise<void>
   stop: () => void
@@ -43,6 +45,7 @@ interface AppState {
   setParam: (instanceId: string, paramId: string, value: ParamValue) => void
 
   setView: (view: ViewKind) => void
+  setVizLayout: (layout: VizLayout) => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -52,6 +55,7 @@ export const useStore = create<AppState>((set, get) => ({
   masterDb: 0,
   chain: [],
   view: 'waveform',
+  vizLayout: 'combined',
 
   async play() {
     await engine.play()
@@ -123,6 +127,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   setView(view) {
     set({ view })
+  },
+  setVizLayout(layout) {
+    set({ vizLayout: layout })
   },
 }))
 
